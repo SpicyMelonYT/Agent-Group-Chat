@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
+import { app } from "electron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,11 +11,13 @@ const __dirname = path.dirname(__filename);
 export class StoreManager extends Manager {
   constructor() {
     super();
-    this.basePath = path.join(__dirname, '../../data'); // Store data in agent-group-chat/data
     this.fileWatchers = new Map(); // Map<filePath, watcherId>
   }
 
   async init() {
+    // Initialize store path using Electron's userData folder
+    this.basePath = path.join(app.getPath("userData"), "App");
+
     // Ensure the data directory exists
     await this.ensureDirectoryExists(this.basePath);
     console.log('StoreManager initialized with base path:', this.basePath);
