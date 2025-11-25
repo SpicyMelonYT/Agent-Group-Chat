@@ -14,43 +14,26 @@ let mainWindow;
 const mainApp = new MainApp();
 
 /**
- * Register IPC handlers for all manager endpoints
+ * Register IPC handlers based on manager preload APIs
  */
 function registerIpcHandlers() {
-  const endpoints = mainApp.getIpcEndpoints();
+  // Collect preload APIs from all managers
+  mainApp.collectPreloadAPIs();
 
-  // Special handler for preload to get endpoints
-  ipcMain.handle('getIpcEndpoints', () => {
-    return endpoints;
-  });
-
-  for (const [endpointName, config] of Object.entries(endpoints)) {
-    const { type, handler } = config;
-
-    switch (type) {
-      case 'invoke':
-        // Frontend calls backend, returns result
-        ipcMain.handle(endpointName, async (event, ...args) => {
-          return await handler(...args);
+  // Register IPC handlers for each manager's API
+  for (const managerAPI of mainApp.preloadAPIs) {
+    for (const [methodName, config] of Object.entries(managerAPI.api)) {
+      if (config && typeof config === 'object' && config.channel) {
+        // Register the IPC handler for this channel
+        ipcMain.handle(config.channel, async (event, ...args) => {
+          // Find the manager and call the appropriate method
+          const manager = mainApp.managers.find(m => m.constructor.name === managerAPI.name);
+          if (manager && typeof manager[methodName] === 'function') {
+            return await manager[methodName](...args);
+          }
+          throw new Error(`Method ${methodName} not found on manager ${managerAPI.name}`);
         });
-        break;
-
-      case 'handle':
-        // Frontend calls backend, no return
-        ipcMain.on(endpointName, async (event, ...args) => {
-          await handler(...args);
-        });
-        break;
-
-      case 'send':
-        // Backend sends to frontend - this will be handled by managers directly
-        // They can use mainWindow.webContents.send(config.channel, data)
-        break;
-
-      case 'request':
-        // Backend requests from frontend - this will be handled by managers directly
-        // They can use mainWindow.webContents.send(config.channel, data) and listen for response
-        break;
+      }
     }
   }
 }
@@ -91,6 +74,16 @@ app.whenReady().then(async () => {
   // Register IPC handlers for all managers
   registerIpcHandlers();
 
+  // Register a special IPC handler for preload script to get API configs
+  ipcMain.on('get-manager-api-configs', (event) => {
+    try {
+      event.returnValue = mainApp.preloadAPIs || [];
+    } catch (error) {
+      console.error('Failed to send manager API configs:', error);
+      event.returnValue = [];
+    }
+  });
+
   // Create the main window
   createWindow();
 
@@ -104,6 +97,14 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
+});
+
+// Handle hot reload signal from watch process
+process.on('SIGUSR1', () => {
+  if (mainWindow) {
+    console.log('🔄 Hot reload triggered - reloading window...');
+    mainWindow.reload();
+  }
 });
 
 // Quit when all windows are closed, except on macOS

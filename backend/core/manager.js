@@ -11,25 +11,21 @@ export class Manager {
   }
 
   /**
-   * Define IPC endpoints for this manager.
-   * Override this method in subclasses to return IPC endpoint definitions.
+   * Define preload API configuration for this manager.
+   * Override this method in subclasses to return API configuration for the preload script.
    *
-   * Supported endpoint types:
-   * - 'invoke': Frontend calls backend, backend returns result (async)
-   * - 'handle': Frontend calls backend, backend handles without return
-   * - 'send': Backend sends to frontend (no response expected)
-   * - 'request': Backend requests data from frontend (waits for response)
-   *
-   * @returns {Object} IPC endpoint definitions
+   * @returns {Object} Preload API configuration
    */
-  getIpcEndpoints() {
+  initPreload() {
     return {
-      // Example format:
-      // 'endpointName': {
-      //   type: 'invoke', // 'invoke' | 'handle' | 'send' | 'request'
-      //   handler: this.myHandlerMethod.bind(this) // for invoke/handle
-      //   channel: 'channelName' // for send/request
-      // }
+      name: this.constructor.name,
+      api: {
+        // Example format:
+        // 'methodName': {
+        //   channel: 'ipc-channel-name', // for invoke/handle
+        //   type: 'eventListener', eventChannel: 'event-channel' // for events
+        // }
+      }
     };
   }
 }

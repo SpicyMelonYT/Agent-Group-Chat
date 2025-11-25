@@ -9,6 +9,8 @@ export class App {
     this.managers = [];
     /** @type {import('electron').BrowserWindow} */
     this.mainWindow = null;
+    /** @type {Object[]} */
+    this.preloadAPIs = [];
   }
 
   /**
@@ -52,29 +54,37 @@ export class App {
   }
 
   /**
-   * Get all IPC endpoints from all managers.
-   * @returns {Object} Consolidated IPC endpoints
+   * Collect preload APIs from all initialized managers.
    */
-  getIpcEndpoints() {
-    const allEndpoints = {};
+  collectPreloadAPIs() {
+    this.preloadAPIs = [];
 
     for (const manager of this.managers) {
-      const managerEndpoints = manager.getIpcEndpoints();
-
-      // Merge endpoints, with manager name as prefix to avoid conflicts
-      const managerName = manager.constructor.name;
-      for (const [endpointName, config] of Object.entries(managerEndpoints)) {
-        const fullEndpointName = `${managerName}:${endpointName}`;
-        allEndpoints[fullEndpointName] = {
-          ...config,
-          manager: manager,
-          managerName: managerName,
-          endpointName: endpointName
-        };
+      try {
+        if (typeof manager.initPreload === 'function') {
+          const managerAPIConfig = manager.initPreload();
+          if (
+            managerAPIConfig &&
+            typeof managerAPIConfig === 'object' &&
+            managerAPIConfig.name &&
+            managerAPIConfig.api
+          ) {
+            // Add manager API config to the array
+            this.preloadAPIs.push(managerAPIConfig);
+            console.log(
+              `Collected preload API config from ${manager.constructor.name}: ${
+                managerAPIConfig.name
+              } with api: ${Object.keys(managerAPIConfig.api).join(', ')}`
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Failed to collect preload APIs from ${manager.constructor.name}:`,
+          error
+        );
       }
     }
-
-    return allEndpoints;
   }
 
   /**
