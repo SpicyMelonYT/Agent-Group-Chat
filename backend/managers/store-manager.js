@@ -2,6 +2,7 @@ import { Manager } from "../core/index.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -265,7 +266,27 @@ export class StoreManager extends Manager {
 
         // File watching system
         watchFile: { channel: 'StoreManager:watchFile' },
-        unwatchFile: { channel: 'StoreManager:unwatchFile' }
+        unwatchFile: { channel: 'StoreManager:unwatchFile' },
+
+        // Archive system
+        createArchive: { channel: 'StoreManager:createArchive' },
+        deleteArchive: { channel: 'StoreManager:deleteArchive' },
+        listArchives: { channel: 'StoreManager:listArchives' },
+        archiveExists: { channel: 'StoreManager:archiveExists' },
+
+        // Entry system
+        createEntry: { channel: 'StoreManager:createEntry' },
+        deleteEntry: { channel: 'StoreManager:deleteEntry' },
+        listEntries: { channel: 'StoreManager:listEntries' },
+        entryExists: { channel: 'StoreManager:entryExists' },
+
+        // Entry data operations
+        storeEntryData: { channel: 'StoreManager:storeEntryData' },
+        storeEntryJSON: { channel: 'StoreManager:storeEntryJSON' },
+        getEntryData: { channel: 'StoreManager:getEntryData' },
+        getEntryJSON: { channel: 'StoreManager:getEntryJSON' },
+        listEntryData: { channel: 'StoreManager:listEntryData' },
+        deleteEntryData: { channel: 'StoreManager:deleteEntryData' }
       }
     };
   }
@@ -312,6 +333,221 @@ export class StoreManager extends Manager {
       } catch (error) {
         console.error(`Error notifying file watcher for ${filePath}:`, error);
       }
+    }
+  }
+
+  // ===== ARCHIVE SYSTEM =====
+
+  /**
+   * Create a new archive (collection folder)
+   * @param {string} archiveName - Name of the archive
+   */
+  async createArchive(archiveName) {
+    try {
+      const archivePath = `archives/${archiveName}`;
+      await this.ensureDirectoryExists(this.resolvePath(archivePath));
+    } catch (error) {
+      throw new Error(`Failed to create archive ${archiveName}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete an entire archive and all its entries
+   * @param {string} archiveName - Name of the archive to delete
+   */
+  async deleteArchive(archiveName) {
+    try {
+      const archivePath = `archives/${archiveName}`;
+      await this.delete(archivePath);
+    } catch (error) {
+      throw new Error(`Failed to delete archive ${archiveName}: ${error.message}`);
+    }
+  }
+
+  /**
+   * List all archives
+   * @returns {Promise<Array<{name: string, type: 'directory'}>>}
+   */
+  async listArchives() {
+    try {
+      return await this.list('archives');
+    } catch (error) {
+      throw new Error(`Failed to list archives: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if an archive exists
+   * @param {string} archiveName - Name of the archive
+   * @returns {Promise<boolean>}
+   */
+  async archiveExists(archiveName) {
+    try {
+      return await this.exists(`archives/${archiveName}`);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // ===== ENTRY SYSTEM =====
+
+  /**
+   * Create a new entry in an archive with auto-generated UUID
+   * @param {string} archiveName - Name of the archive
+   * @returns {Promise<string>} The UUID of the created entry
+   */
+  async createEntry(archiveName) {
+    try {
+      const entryId = randomUUID();
+      const entryPath = `archives/${archiveName}/${entryId}`;
+      await this.ensureDirectoryExists(this.resolvePath(entryPath));
+      return entryId;
+    } catch (error) {
+      throw new Error(`Failed to create entry in archive ${archiveName}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete an entry from an archive
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry to delete
+   */
+  async deleteEntry(archiveName, entryId) {
+    try {
+      const entryPath = `archives/${archiveName}/${entryId}`;
+      await this.delete(entryPath);
+    } catch (error) {
+      throw new Error(`Failed to delete entry ${entryId} from archive ${archiveName}: ${error.message}`);
+    }
+  }
+
+  /**
+   * List all entries in an archive
+   * @param {string} archiveName - Name of the archive
+   * @returns {Promise<Array<{id: string, path: string, type: 'directory'}>>}
+   */
+  async listEntries(archiveName) {
+    try {
+      const entries = await this.list(`archives/${archiveName}`);
+      return entries.map(entry => ({
+        id: entry.name,
+        path: `archives/${archiveName}/${entry.name}`,
+        type: entry.type
+      }));
+    } catch (error) {
+      throw new Error(`Failed to list entries in archive ${archiveName}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if an entry exists in an archive
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @returns {Promise<boolean>}
+   */
+  async entryExists(archiveName, entryId) {
+    try {
+      return await this.exists(`archives/${archiveName}/${entryId}`);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // ===== ENTRY DATA OPERATIONS =====
+
+  /**
+   * Store data in an entry (creates necessary directories)
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} dataPath - Relative path within the entry (e.g., 'profile.json')
+   * @param {string} content - Text content to store
+   */
+  async storeEntryData(archiveName, entryId, dataPath, content) {
+    try {
+      const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
+      await this.writeText(fullPath, content);
+    } catch (error) {
+      throw new Error(`Failed to store data in entry ${entryId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Store JSON data in an entry
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} dataPath - Relative path within the entry (e.g., 'profile.json')
+   * @param {any} data - Data to serialize as JSON
+   */
+  async storeEntryJSON(archiveName, entryId, dataPath, data) {
+    try {
+      const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
+      await this.writeJSON(fullPath, data);
+    } catch (error) {
+      throw new Error(`Failed to store JSON data in entry ${entryId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Retrieve data from an entry
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} dataPath - Relative path within the entry
+   * @returns {Promise<string>}
+   */
+  async getEntryData(archiveName, entryId, dataPath) {
+    try {
+      const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
+      return await this.readText(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to get data from entry ${entryId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Retrieve JSON data from an entry
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} dataPath - Relative path within the entry
+   * @returns {Promise<any>}
+   */
+  async getEntryJSON(archiveName, entryId, dataPath) {
+    try {
+      const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
+      return await this.readJSON(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to get JSON data from entry ${entryId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * List all data files in an entry
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} subPath - Optional subpath within the entry (default: root)
+   * @returns {Promise<Array<{name: string, type: 'file'|'directory', size?: number}>>}
+   */
+  async listEntryData(archiveName, entryId, subPath = '') {
+    try {
+      const entryPath = `archives/${archiveName}/${entryId}`;
+      const fullPath = subPath ? `${entryPath}/${subPath}` : entryPath;
+      return await this.list(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to list data in entry ${entryId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete data from an entry
+   * @param {string} archiveName - Name of the archive
+   * @param {string} entryId - UUID of the entry
+   * @param {string} dataPath - Relative path within the entry to delete
+   */
+  async deleteEntryData(archiveName, entryId, dataPath) {
+    try {
+      const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
+      await this.delete(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to delete data from entry ${entryId}: ${error.message}`);
     }
   }
 }
