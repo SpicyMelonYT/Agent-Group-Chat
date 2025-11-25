@@ -1,0 +1,36 @@
+{
+  "name": "agent-group-chat",
+  "version": "1.0.0",
+  "description": "An Electron application for agent group chat functionality",
+  "type": "module",
+  "main": "backend/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "dependencies": {
+    "electron": "^25.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.agentgroupchat.app",
+    "productName": "Agent Group Chat",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "backend/**/*",
+      "frontend/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
