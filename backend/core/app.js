@@ -1,5 +1,5 @@
 import { Manager } from "./manager.js";
-import { Logger } from "./logging.js";
+import { Logger } from "./logger.js";
 
 /**
  * Base application class that manages managers.

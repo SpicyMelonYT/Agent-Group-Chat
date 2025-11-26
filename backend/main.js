@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { MainApp } from "./app.js";
-import { Logger } from "./core/logging.js";
+import { Logger } from "./core/logger.js";
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);

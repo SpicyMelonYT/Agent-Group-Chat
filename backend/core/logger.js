@@ -374,7 +374,7 @@ export class Logger {
 
     // Find all external lines (not from Logger)
     const externalLines = lines.filter(
-      (line) => !line.includes("Logger._emit") && !line.includes("logging.js")
+      (line) => !line.includes("Logger._emit") && !line.includes("logger.js")
     );
 
     // Select the line at the specified depth, or fall back to first external or first line
