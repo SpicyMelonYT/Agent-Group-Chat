@@ -16,7 +16,9 @@ class HotReloadWatcher {
   constructor() {
     this.electronProcess = null;
     this.isRestarting = false;
+    this.isPendingRestart = false; // Flag to prevent multiple restart operations
     this.startTime = Date.now();
+    this.restartTimeout = null; // For debouncing multiple file changes
 
     // Get electron executable path
     this.electronPath = require('electron');
@@ -38,12 +40,22 @@ class HotReloadWatcher {
   }
 
   startElectron() {
+    // Prevent multiple restart operations from running simultaneously
+    if (this.isPendingRestart) {
+      this.log('Restart already pending, skipping...');
+      return;
+    }
+
+    this.isPendingRestart = true;
+
     if (this.electronProcess) {
       this.log('Stopping existing Electron process...');
       this.electronProcess.kill('SIGTERM');
 
       // Give it a moment to shut down
-      setTimeout(() => this.spawnElectron(), 1000);
+      setTimeout(() => {
+        this.spawnElectron();
+      }, 1000);
     } else {
       this.spawnElectron();
     }
@@ -65,6 +77,9 @@ class HotReloadWatcher {
       stdio: 'inherit',
       env
     });
+
+    // Clear the pending restart flag now that we've started the new process
+    this.isPendingRestart = false;
 
     this.electronProcess.on('close', (code) => {
       if (!this.isRestarting) {
@@ -93,15 +108,23 @@ class HotReloadWatcher {
 
     backendWatcher.on('change', (filePath) => {
       this.log(`Backend file changed: ${filePath}`);
-      this.isRestarting = true;
-      setTimeout(() => {
+
+      // Clear any existing restart timeout
+      if (this.restartTimeout) {
+        clearTimeout(this.restartTimeout);
+      }
+
+      // Set a new debounced restart timeout
+      this.restartTimeout = setTimeout(() => {
+        this.isRestarting = true;
         this.startElectron();
         this.isRestarting = false;
-      }, 500); // Debounce restarts
+        this.restartTimeout = null;
+      }, 100); // 100ms debounce delay
     });
 
     this.log('File watchers active!');
-    this.log('Backend changes will restart the Electron process');
+    this.log('Backend changes will restart the Electron process (debounced 100ms)');
     this.log('Frontend changes will reload the Electron window (via electron-reload)');
     this.log('All backend JS files including main.js are watched');
   }
@@ -119,6 +142,10 @@ class HotReloadWatcher {
     // Handle graceful shutdown
     process.on('SIGINT', () => {
       this.log('Shutting down...');
+      if (this.restartTimeout) {
+        clearTimeout(this.restartTimeout);
+      }
+      this.isPendingRestart = false; // Reset flag on shutdown
       if (this.electronProcess) {
         this.electronProcess.kill('SIGTERM');
       }
@@ -127,6 +154,10 @@ class HotReloadWatcher {
 
     process.on('SIGTERM', () => {
       this.log('Shutting down...');
+      if (this.restartTimeout) {
+        clearTimeout(this.restartTimeout);
+      }
+      this.isPendingRestart = false; // Reset flag on shutdown
       if (this.electronProcess) {
         this.electronProcess.kill('SIGTERM');
       }
