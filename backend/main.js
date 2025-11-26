@@ -1,11 +1,13 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 import { MainApp } from "./app.js";
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -79,6 +81,22 @@ function createWindow(windowManager = null) {
   });
 }
 
+// Configure electron-reload for frontend hot reloading (development only)
+if (process.argv.includes("--dev")) {
+  try {
+    const electronReload = require("electron-reload");
+    const frontendPath = path.join(__dirname, "../frontend");
+    electronReload(frontendPath, {
+      electron: require("electron"),
+      hardResetMethod: "exit",
+      forceHardReset: false,
+    });
+    console.log("🔄 Frontend hot reloading enabled for development");
+  } catch (error) {
+    console.warn(`Hot reloading not available: ${error?.message || error}`);
+  }
+}
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
   // Initialize managers before creating the window
@@ -120,14 +138,6 @@ app.whenReady().then(async () => {
       createWindow(windowManager);
     }
   });
-});
-
-// Handle hot reload signal from watch process
-process.on('SIGUSR1', () => {
-  if (mainWindow) {
-    console.log('🔄 Hot reload triggered - reloading window...');
-    mainWindow.reload();
-  }
 });
 
 // Quit when all windows are closed, except on macOS

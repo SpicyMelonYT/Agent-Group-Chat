@@ -26,25 +26,45 @@ export class Logger {
     this._tagEvaluator = this._compilePattern(normalized);
   }
 
-  log(tagInput, ...messages) {
-    this._emit(console.log, tagInput, messages);
+  log(settings, ...messages) {
+    this._emit(console.log, settings, messages);
   }
 
-  error(tagInput, ...messages) {
-    this._emit(console.error, tagInput, messages);
+  error(settings, ...messages) {
+    this._emit(console.error, settings, messages);
   }
 
-  warn(tagInput, ...messages) {
-    this._emit(console.warn, tagInput, messages);
+  warn(settings, ...messages) {
+    this._emit(console.warn, settings, messages);
   }
 
-  _emit(fn, tagInput, messages) {
-    const { tags, label } = this._normalizeTags(tagInput);
+  _emit(fn, settings, messages) {
+    const { tags, label, colors } = this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;
     }
 
-    fn(`[${label}]`, ...messages);
+    // Apply colors if specified
+    if (colors.color1 && colors.color2) {
+      const tagPart = `%c[${label}]%c`;
+      const messagePart = messages.map(msg => `%c${msg}%c`).join(' ');
+
+      const styles = [
+        `color: ${colors.color1}`, // Tag opening bracket and label
+        `color: ${colors.color2}`, // Reset for space after tag
+      ];
+
+      // Add styles for each message part
+      messages.forEach(() => {
+        styles.push(`color: ${colors.color2}`); // Message color
+        styles.push(''); // Reset
+      });
+
+      fn(tagPart + ' ' + messagePart, ...styles);
+    } else {
+      // No colors specified, use default
+      fn(`[${label}]`, ...messages);
+    }
   }
 
   _shouldLog(tags) {
@@ -56,27 +76,61 @@ export class Logger {
   }
 
   _normalizeTags(tagInput) {
-    if (tagInput instanceof Set) {
-      const tags = Array.from(tagInput).map((tag) => String(tag).trim());
-      const filtered = tags.filter(Boolean);
-      return {
-        tags: new Set(filtered),
-        label: filtered.length ? filtered.join("|") : "untagged",
-      };
+    let tags = new Set();
+    let label = "untagged";
+    let colors = { color1: "white", color2: "white" };
+
+    // Handle object input with tag and color properties
+    if (tagInput && typeof tagInput === 'object' && !Array.isArray(tagInput) && !(tagInput instanceof Set)) {
+      // Extract tag information
+      const tagValue = tagInput.tag || tagInput.tags;
+      if (tagValue) {
+        if (tagValue instanceof Set) {
+          tags = new Set(Array.from(tagValue).map((tag) => String(tag).trim()).filter(Boolean));
+        } else if (Array.isArray(tagValue)) {
+          tags = new Set(tagValue.map((tag) => String(tag).trim()).filter(Boolean));
+        } else {
+          const raw = String(tagValue).split("|");
+          tags = new Set(raw.map((tag) => String(tag).trim()).filter(Boolean));
+        }
+      }
+
+      // Extract color information
+      if (tagInput.color) {
+        colors.color1 = tagInput.color;
+        colors.color2 = tagInput.color;
+      }
+      if (tagInput.color1) {
+        colors.color1 = tagInput.color1;
+      }
+      if (tagInput.color2) {
+        colors.color2 = tagInput.color2;
+      }
+
+      label = tags.size > 0 ? Array.from(tags).join("|") : "untagged";
+    }
+    // Handle legacy Set input
+    else if (tagInput instanceof Set) {
+      const tagArray = Array.from(tagInput).map((tag) => String(tag).trim());
+      const filtered = tagArray.filter(Boolean);
+      tags = new Set(filtered);
+      label = filtered.length ? filtered.join("|") : "untagged";
+    }
+    // Handle legacy array/string input
+    else {
+      const raw = Array.isArray(tagInput)
+        ? tagInput
+        : String(tagInput ?? "").split("|");
+
+      const tagArray = raw
+        .map((tag) => String(tag).trim())
+        .filter(Boolean);
+
+      tags = new Set(tagArray);
+      label = tagArray.length > 0 ? tagArray.join("|") : String(tagInput ?? "").trim() || "untagged";
     }
 
-    const raw = Array.isArray(tagInput)
-      ? tagInput
-      : String(tagInput ?? "").split("|");
-
-    const tags = raw
-      .map((tag) => String(tag).trim())
-      .filter(Boolean);
-
-    const label =
-      tags.length > 0 ? tags.join("|") : String(tagInput ?? "").trim() || "untagged";
-
-    return { tags: new Set(tags), label };
+    return { tags, label, colors };
   }
 
   _compilePattern(pattern) {
