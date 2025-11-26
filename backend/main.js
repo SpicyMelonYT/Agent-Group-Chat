@@ -94,7 +94,6 @@ if (process.argv.includes("--dev")) {
     const electronReload = require("electron-reload");
     const frontendPath = path.join(__dirname, "../frontend");
     electronReload(frontendPath, {
-      electron: require("electron"),
       hardResetMethod: "exit",
       forceHardReset: false,
     });
