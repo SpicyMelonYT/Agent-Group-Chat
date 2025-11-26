@@ -12,14 +12,10 @@ export class WindowManager extends Manager {
 
   async init() {
     try {
-      console.log('WindowManager: Starting initialization...');
-
       // Ensure we have access to the StoreManager
       if (!this.app) {
         throw new Error('WindowManager requires an app instance');
       }
-
-      console.log('WindowManager: App instance found');
 
       // Get the StoreManager instance
       const storeManager = this.app.managers.find(m => m.constructor.name === 'StoreManager');
@@ -27,20 +23,14 @@ export class WindowManager extends Manager {
         throw new Error('WindowManager requires StoreManager to be initialized first');
       }
 
-      console.log('WindowManager: StoreManager found');
       this.storeManager = storeManager;
 
-    // Initialize window configuration
-    console.log('WindowManager: Initializing config...');
-    await this.initializeConfig();
-
-    // Note: setupWindowListeners() will be called later after window is created
-    console.log('WindowManager: Config initialized, waiting for window creation...');
+      // Initialize window configuration
+      await this.initializeConfig();
 
       this.isInitialized = true;
-      console.log('WindowManager: Initialization complete');
     } catch (error) {
-      console.error('WindowManager: Failed to initialize:', error);
+      console.error('WindowManager initialization failed:', error);
       throw error;
     }
   }
@@ -52,7 +42,6 @@ export class WindowManager extends Manager {
     try {
       // Try to load existing config
       this.config = await this.storeManager.readJSON(this.configFile);
-      console.log('Loaded existing window config:', this.config);
     } catch (error) {
       // Create default config if it doesn't exist
       this.config = {
@@ -67,7 +56,6 @@ export class WindowManager extends Manager {
 
       // Save default config
       await this.storeManager.writeJSON(this.configFile, this.config);
-      console.log('Created default window config:', this.config);
     }
   }
 
@@ -76,27 +64,21 @@ export class WindowManager extends Manager {
    * This should be called after the window is created
    */
   setupWindowListeners() {
-    console.log('WindowManager: Setting up window event listeners...');
-
     if (!this.app || !this.app.mainWindow) {
-      console.warn('WindowManager: No main window available for event listeners');
+      console.warn('No main window available for event listeners');
       return;
     }
-
-    console.log('WindowManager: Main window found, attaching listeners...');
 
     const window = this.app.mainWindow;
 
     // Save position and size when window is moved or resized
     window.on('move', () => {
-      console.log('WindowManager: Window moved event');
       if (!this.isApplyingState && !window.isMaximized() && !window.isFullScreen()) {
         this.saveCurrentState();
       }
     });
 
     window.on('resize', () => {
-      console.log('WindowManager: Window resized event');
       if (!this.isApplyingState && !window.isMaximized() && !window.isFullScreen()) {
         this.saveCurrentState();
       }
@@ -104,7 +86,6 @@ export class WindowManager extends Manager {
 
     // Save state when maximized/minimized/fullscreen changes
     window.on('maximize', () => {
-      console.log('WindowManager: Window maximized event');
       if (!this.isApplyingState) {
         this.config.maximized = true;
         this.config.fullscreen = false;
@@ -113,7 +94,6 @@ export class WindowManager extends Manager {
     });
 
     window.on('unmaximize', () => {
-      console.log('WindowManager: Window unmaximized event');
       if (!this.isApplyingState) {
         this.config.maximized = false;
         this.saveConfig();
@@ -121,7 +101,6 @@ export class WindowManager extends Manager {
     });
 
     window.on('enter-full-screen', () => {
-      console.log('WindowManager: Window entered fullscreen event');
       if (!this.isApplyingState) {
         this.config.fullscreen = true;
         this.config.maximized = false;
@@ -130,7 +109,6 @@ export class WindowManager extends Manager {
     });
 
     window.on('leave-full-screen', () => {
-      console.log('WindowManager: Window left fullscreen event');
       if (!this.isApplyingState) {
         this.config.fullscreen = false;
         this.saveConfig();
@@ -138,7 +116,6 @@ export class WindowManager extends Manager {
     });
 
     window.on('minimize', () => {
-      console.log('WindowManager: Window minimized event');
       if (!this.isApplyingState) {
         this.config.minimized = true;
         this.saveConfig();
@@ -146,7 +123,6 @@ export class WindowManager extends Manager {
     });
 
     window.on('restore', () => {
-      console.log('WindowManager: Window restored event');
       if (!this.isApplyingState) {
         this.config.minimized = false;
         this.saveConfig();
@@ -182,7 +158,6 @@ export class WindowManager extends Manager {
    * Save config to file
    */
   async saveConfig() {
-    console.log('Saving window config:', this.config);
     try {
       await this.storeManager.writeJSON(this.configFile, this.config);
     } catch (error) {
@@ -195,15 +170,12 @@ export class WindowManager extends Manager {
    */
   async applySavedState() {
     if (!this.app || !this.app.mainWindow || !this.isInitialized) {
-      console.warn('WindowManager: Cannot apply saved state - not initialized or no window');
       return;
     }
 
     const window = this.app.mainWindow;
 
     try {
-      console.log('WindowManager: Applying saved state:', this.config);
-
       // Set flag to prevent event listeners from saving during state application
       this.isApplyingState = true;
 
@@ -225,7 +197,6 @@ export class WindowManager extends Manager {
         }
 
         if (positionValid) {
-          console.log('WindowManager: Setting bounds to saved position');
           window.setBounds({
             x: this.config.x,
             y: this.config.y,
@@ -233,48 +204,40 @@ export class WindowManager extends Manager {
             height: this.config.height
           });
         } else {
-          console.log('WindowManager: Saved position is off-screen, centering instead');
+          // Position is off-screen, center instead
           window.center();
           window.setSize(this.config.width, this.config.height);
         }
       } else {
-        console.log('WindowManager: No saved position, centering window');
+        // No saved position, center the window
         window.center();
         window.setSize(this.config.width, this.config.height);
       }
 
-      // Apply window states (maximize after positioning to avoid conflicts)
+      // Apply window states with small delay to ensure positioning is complete
       if (this.config.maximized && !this.config.fullscreen) {
-        console.log('WindowManager: Maximizing window');
-        // Small delay to ensure positioning is complete
         setTimeout(() => {
           window.maximize();
           this.isApplyingState = false;
-          console.log('WindowManager: State application complete');
         }, 100);
       } else if (this.config.fullscreen) {
-        console.log('WindowManager: Setting fullscreen');
         setTimeout(() => {
           window.setFullScreen(true);
           this.isApplyingState = false;
-          console.log('WindowManager: State application complete');
         }, 100);
       } else if (this.config.minimized) {
-        console.log('WindowManager: Minimizing window');
         setTimeout(() => {
           window.minimize();
           this.isApplyingState = false;
-          console.log('WindowManager: State application complete');
         }, 100);
       } else {
         // No special state to apply
         this.isApplyingState = false;
-        console.log('WindowManager: State application complete');
       }
 
     } catch (error) {
       this.isApplyingState = false;
-      console.error('WindowManager: Failed to apply saved window state:', error);
+      console.error('Failed to apply saved window state:', error);
     }
   }
 
