@@ -15,12 +15,20 @@ export class StoreManager extends Manager {
   }
 
   async init() {
-    // Initialize store path using Electron's userData folder
-    this.basePath = path.join(app.getPath("userData"), "App");
+    try {
+      console.log('StoreManager: Starting initialization...');
 
-    // Ensure the data directory exists
-    await this.ensureDirectoryExists(this.basePath);
-    console.log('StoreManager initialized with base path:', this.basePath);
+      // Initialize store path using Electron's userData folder
+      this.basePath = path.join(app.getPath("userData"), "App");
+      console.log('StoreManager: Base path set to:', this.basePath);
+
+      // Ensure the data directory exists
+      await this.ensureDirectoryExists(this.basePath);
+      console.log('StoreManager: Data directory ensured, initialization complete');
+    } catch (error) {
+      console.error('StoreManager: Failed to initialize:', error);
+      throw error;
+    }
   }
 
   /**

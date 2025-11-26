@@ -57,10 +57,12 @@ export class App {
    * Collect preload APIs from all initialized managers.
    */
   collectPreloadAPIs() {
+    console.log('App: Collecting preload APIs...');
     this.preloadAPIs = [];
 
     for (const manager of this.managers) {
       try {
+        console.log(`App: Processing manager ${manager.constructor.name}...`);
         if (typeof manager.initPreload === 'function') {
           const managerAPIConfig = manager.initPreload();
           if (
@@ -72,19 +74,25 @@ export class App {
             // Add manager API config to the array
             this.preloadAPIs.push(managerAPIConfig);
             console.log(
-              `Collected preload API config from ${manager.constructor.name}: ${
+              `App: Collected preload API config from ${manager.constructor.name}: ${
                 managerAPIConfig.name
               } with api: ${Object.keys(managerAPIConfig.api).join(', ')}`
             );
+          } else {
+            console.warn(`App: Invalid preload API config from ${manager.constructor.name}`);
           }
+        } else {
+          console.warn(`App: Manager ${manager.constructor.name} has no initPreload method`);
         }
       } catch (error) {
         console.error(
-          `Failed to collect preload APIs from ${manager.constructor.name}:`,
+          `App: Failed to collect preload APIs from ${manager.constructor.name}:`,
           error
         );
       }
     }
+
+    console.log(`App: Collected ${this.preloadAPIs.length} preload API configs`);
   }
 
   /**
