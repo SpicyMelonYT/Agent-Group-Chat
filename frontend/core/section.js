@@ -8,10 +8,14 @@ export class Section {
     window.logger = this.logger;
     window.section = this;
 
-    // this.logger.setTagPattern("manager");
-
     this.logger.log(
-      { tags: "section", color1: "lime", includeSource: true, sourceDepth: 1, sourcePosition: "start" },
+      {
+        tags: "section",
+        color1: "lime",
+        includeSource: true,
+        sourceDepth: 1,
+        sourcePosition: "start",
+      },
       `Section created: ${this.constructor.name}`
     );
   }

@@ -49,6 +49,9 @@ export class Logger {
       return;
     }
 
+    // Filter displayed tags to only show those that match the current pattern (if any)
+    const displayLabel = this._getDisplayLabel(tags);
+
     const callerInfo = includeSource ? this._getCallerInfo(sourceDepth) : null;
 
     // Apply colors if specified
@@ -63,7 +66,7 @@ export class Logger {
         styles.push(''); // Reset
       }
 
-      formatString += `%c[${label}]%c`;
+      formatString += `%c[${displayLabel}]%c`;
       styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
       styles.push(`color: ${colors.color2}`); // Reset for space after tag
 
@@ -86,9 +89,9 @@ export class Logger {
       // No colors specified, use default
       const args = [];
       if (callerInfo && sourcePosition === "start") {
-        args.push(callerInfo, `[${label}]`);
+        args.push(callerInfo, `[${displayLabel}]`);
       } else {
-        args.push(`[${label}]`);
+        args.push(`[${displayLabel}]`);
       }
       args.push(...messages);
       if (callerInfo && sourcePosition === "end") {
@@ -104,6 +107,27 @@ export class Logger {
     }
 
     return this._tagEvaluator(tags);
+  }
+
+  _getDisplayLabel(tags) {
+    // If no pattern is set, show all tags
+    if (!this._tagEvaluator) {
+      return tags.size > 0 ? Array.from(tags).join("|") : "untagged";
+    }
+
+    // Filter tags to only include those that would individually match the pattern
+    const matchingTags = [];
+    for (const tag of tags) {
+      // Test each tag individually against the pattern
+      const singleTagSet = new Set([tag]);
+      if (this._tagEvaluator(singleTagSet)) {
+        matchingTags.push(tag);
+      }
+    }
+
+    // If no individual tags matched but the full set did, fall back to showing all tags
+    // This handles complex patterns where tags work together
+    return matchingTags.length > 0 ? matchingTags.join("|") : Array.from(tags).join("|");
   }
 
   _normalizeTags(tagInput) {
