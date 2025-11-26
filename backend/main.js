@@ -45,45 +45,18 @@ function registerIpcHandlers() {
   console.log('Main: IPC handlers registered successfully');
 }
 
-function createWindow(savedConfig = null) {
-  // Prepare window options based on saved config
+function createWindow(windowManager = null) {
+  // Prepare window options; keep window hidden until state is applied
   const windowOptions = {
+    width: 1200,
+    height: 800,
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, "preload.cjs"),
     },
   };
-
-  // Apply saved configuration if available
-  if (savedConfig) {
-    console.log('Main: Creating window with saved config:', savedConfig);
-
-    // Set size (always apply)
-    windowOptions.width = savedConfig.width || 1200;
-    windowOptions.height = savedConfig.height || 800;
-
-    // Set position only if it's valid and on-screen
-    if (savedConfig.x !== null && savedConfig.y !== null) {
-      // Quick validation - check if position is reasonable
-      if (savedConfig.x >= -10000 && savedConfig.x <= 10000 &&
-          savedConfig.y >= -10000 && savedConfig.y <= 10000) {
-        windowOptions.x = savedConfig.x;
-        windowOptions.y = savedConfig.y;
-        console.log('Main: Using saved position:', savedConfig.x, savedConfig.y);
-      } else {
-        console.log('Main: Saved position seems invalid, centering window');
-      }
-    }
-
-    // Don't set maximized/minimized/fullscreen in constructor
-    // These will be applied after window creation to avoid conflicts
-  } else {
-    // Default size if no saved config
-    windowOptions.width = 1200;
-    windowOptions.height = 800;
-    console.log('Main: Creating window with default size');
-  }
 
   // Create the browser window
   mainWindow = new BrowserWindow(windowOptions);
@@ -93,29 +66,20 @@ function createWindow(savedConfig = null) {
     path.join(__dirname, "../frontend/sections/main/index.html")
   );
 
-  // Apply state-based options after window is created
-  if (savedConfig) {
-    // Apply states that can't be set in constructor
-    if (savedConfig.maximized && !savedConfig.fullscreen) {
-      console.log('Main: Maximizing window after creation');
-      mainWindow.maximize();
+  // Apply saved state before showing the window to avoid flicker
+  mainWindow.once("ready-to-show", async () => {
+    if (windowManager) {
+      console.log('Main: Applying saved window state before showing...');
+      await windowManager.applySavedState();
     }
 
-    if (savedConfig.fullscreen) {
-      console.log('Main: Setting fullscreen after creation');
-      mainWindow.setFullScreen(true);
-    }
+    mainWindow.show();
 
-    if (savedConfig.minimized) {
-      console.log('Main: Minimizing window after creation');
-      mainWindow.minimize();
+    // Open DevTools in development
+    if (process.argv.includes("--dev")) {
+      mainWindow.webContents.openDevTools();
     }
-  }
-
-  // Open DevTools in development
-  if (process.argv.includes("--dev")) {
-    mainWindow.webContents.openDevTools();
-  }
+  });
 
   // Emitted when the window is closed
   mainWindow.on("closed", () => {
@@ -146,21 +110,13 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Get saved window config from WindowManager before creating window
-  console.log('Main: Getting saved window config...');
+  // Get WindowManager reference
+  console.log('Main: Getting WindowManager instance...');
   const windowManager = mainApp.managers.find(m => m.constructor.name === 'WindowManager');
-  let savedConfig = null;
 
-  if (windowManager && windowManager.config) {
-    savedConfig = windowManager.config;
-    console.log('Main: Using saved window config:', savedConfig);
-  } else {
-    console.log('Main: No saved window config found, using defaults');
-  }
-
-  // Create the main window with saved config
+  // Create the main window (state will be applied before showing)
   console.log('Main: Creating window...');
-  createWindow(savedConfig);
+  createWindow(windowManager);
 
   // Set the main window reference in the app for managers to use
   mainApp.setMainWindow(mainWindow);
@@ -178,7 +134,7 @@ app.whenReady().then(async () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow(windowManager);
     }
   });
 });
