@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
-import chokidar from 'chokidar';
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createRequire } from "module";
+import chokidar from "chokidar";
 
 // Create require function for ESM
 const require = createRequire(import.meta.url);
@@ -21,36 +21,35 @@ class HotReloadWatcher {
     this.restartTimeout = null; // For debouncing multiple file changes
 
     // Get electron executable path
-    this.electronPath = require('electron');
+    this.electronPath = require("electron");
 
     // File patterns to watch
     this.backendWatchPatterns = [
-      'backend/**/*.js',
-      'backend/**/*.json',
-      '!backend/preload.cjs',
-      '!backend/watch.js'
+      "backend/**/*.js",
+      "backend/**/*.json",
+      "!backend/preload.cjs",
+      "!backend/watch.js",
     ];
-
   }
 
-  log(message, type = 'info') {
+  log(message, type = "info") {
     const timestamp = new Date().toLocaleTimeString();
-    const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+    const prefix = type === "error" ? "❌" : type === "success" ? "✅" : "ℹ️";
     console.log(`[${timestamp}] ${prefix} ${message}`);
   }
 
   startElectron() {
     // Prevent multiple restart operations from running simultaneously
     if (this.isPendingRestart) {
-      this.log('Restart already pending, skipping...');
+      this.log("Restart already pending, skipping...");
       return;
     }
 
     this.isPendingRestart = true;
 
     if (this.electronProcess) {
-      this.log('Stopping existing Electron process...');
-      this.electronProcess.kill('SIGTERM');
+      this.log("Stopping existing Electron process...");
+      this.electronProcess.kill("SIGTERM");
 
       // Give it a moment to shut down
       setTimeout(() => {
@@ -62,51 +61,53 @@ class HotReloadWatcher {
   }
 
   spawnElectron() {
-    this.log('Starting Electron process...');
+    this.log("Starting Electron process...");
 
     // Spawn Electron directly with the app directory
-    const args = ['.', '--dev', '--trace-warnings'];
+    const args = [".", "--dev", "--trace-warnings"];
     const env = {
       ...process.env,
-      NODE_ENV: 'development',
-      ELECTRON_DISABLE_SECURITY_WARNINGS: '1'
+      NODE_ENV: "development",
+      ELECTRON_DISABLE_SECURITY_WARNINGS: "1",
     };
 
     this.electronProcess = spawn(this.electronPath, args, {
-      cwd: path.join(__dirname, '..'),
-      stdio: 'inherit',
-      env
+      cwd: path.join(__dirname, ".."),
+      stdio: "inherit",
+      env,
     });
 
     // Clear the pending restart flag now that we've started the new process
     this.isPendingRestart = false;
 
-    this.electronProcess.on('close', (code) => {
+    this.electronProcess.on("close", (code) => {
       if (!this.isRestarting) {
-        this.log(`Electron process exited with code ${code}`, code === 0 ? 'success' : 'error');
+        this.log(
+          `Electron process exited with code ${code}`,
+          code === 0 ? "success" : "error"
+        );
       }
     });
 
-    this.electronProcess.on('error', (error) => {
-      this.log(`Failed to start Electron process: ${error.message}`, 'error');
+    this.electronProcess.on("error", (error) => {
+      this.log(`Failed to start Electron process: ${error.message}`, "error");
     });
   }
 
-
   setupFileWatchers() {
-    this.log('Setting up file watchers...');
+    this.log("Setting up file watchers...");
 
     // Watch backend files (restart process)
     const backendWatcher = chokidar.watch(this.backendWatchPatterns, {
-      cwd: path.join(__dirname, '..'),
+      cwd: path.join(__dirname, ".."),
       ignoreInitial: true,
       awaitWriteFinish: {
         stabilityThreshold: 100,
-        pollInterval: 50
-      }
+        pollInterval: 50,
+      },
     });
 
-    backendWatcher.on('change', (filePath) => {
+    backendWatcher.on("change", (filePath) => {
       this.log(`Backend file changed: ${filePath}`);
 
       // Clear any existing restart timeout
@@ -123,15 +124,19 @@ class HotReloadWatcher {
       }, 100); // 100ms debounce delay
     });
 
-    this.log('File watchers active!');
-    this.log('Backend changes will restart the Electron process (debounced 100ms)');
-    this.log('Frontend changes will reload the Electron window (via electron-reload)');
-    this.log('All backend JS files including main.js are watched');
+    this.log("File watchers active!");
+    this.log(
+      "Backend changes will restart the Electron process (debounced 100ms)"
+    );
+    this.log(
+      "Frontend changes will reload the Electron window (via electron-reload)"
+    );
+    this.log("All backend JS files including main.js are watched");
   }
 
   start() {
-    this.log('🚀 Starting Hot Reload Development Server');
-    this.log('=====================================');
+    this.log("🚀 Starting Hot Reload Development Server");
+    this.log("=====================================");
 
     // Setup file watchers first
     this.setupFileWatchers();
@@ -140,26 +145,26 @@ class HotReloadWatcher {
     this.startElectron();
 
     // Handle graceful shutdown
-    process.on('SIGINT', () => {
-      this.log('Shutting down...');
+    process.on("SIGINT", () => {
+      this.log("Shutting down...");
       if (this.restartTimeout) {
         clearTimeout(this.restartTimeout);
       }
       this.isPendingRestart = false; // Reset flag on shutdown
       if (this.electronProcess) {
-        this.electronProcess.kill('SIGTERM');
+        this.electronProcess.kill("SIGTERM");
       }
       process.exit(0);
     });
 
-    process.on('SIGTERM', () => {
-      this.log('Shutting down...');
+    process.on("SIGTERM", () => {
+      this.log("Shutting down...");
       if (this.restartTimeout) {
         clearTimeout(this.restartTimeout);
       }
       this.isPendingRestart = false; // Reset flag on shutdown
       if (this.electronProcess) {
-        this.electronProcess.kill('SIGTERM');
+        this.electronProcess.kill("SIGTERM");
       }
       process.exit(0);
     });
@@ -168,8 +173,10 @@ class HotReloadWatcher {
 
 // Handle development notifications
 function handleDevNotifications() {
-  console.log('\nℹ️  Development mode: All backend files are watched for hot reloading');
-  console.log('   Changes to main.js will restart the Electron process.\n');
+  console.log(
+    "\nℹ️  Development mode: All backend files are watched for hot reloading"
+  );
+  console.log("   Changes to main.js will restart the Electron process.\n");
 }
 
 // Start the watcher

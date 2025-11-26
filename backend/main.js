@@ -32,15 +32,19 @@ function registerIpcHandlers() {
   // Register IPC handlers for each manager's API
   for (const managerAPI of mainApp.preloadAPIs) {
     for (const [methodName, config] of Object.entries(managerAPI.api)) {
-      if (config && typeof config === 'object' && config.channel) {
+      if (config && typeof config === "object" && config.channel) {
         // Register the IPC handler for this channel
         ipcMain.handle(config.channel, async (event, ...args) => {
           // Find the manager and call the appropriate method
-          const manager = mainApp.managers.find(m => m.constructor.name === managerAPI.name);
-          if (manager && typeof manager[methodName] === 'function') {
+          const manager = mainApp.managers.find(
+            (m) => m.constructor.name === managerAPI.name
+          );
+          if (manager && typeof manager[methodName] === "function") {
             return await manager[methodName](...args);
           }
-          throw new Error(`Method ${methodName} not found on manager ${managerAPI.name}`);
+          throw new Error(
+            `Method ${methodName} not found on manager ${managerAPI.name}`
+          );
         });
       }
     }
@@ -97,16 +101,22 @@ if (process.argv.includes("--dev")) {
       hardResetMethod: "exit",
       forceHardReset: false,
     });
-    logger.log({
-      tags: "main|dev|hot-reload",
-      color1: "cyan"
-    }, "Frontend hot reloading enabled for development");
+    logger.log(
+      {
+        tags: "main|dev|hot-reload",
+        color1: "cyan",
+      },
+      "Frontend hot reloading enabled for development"
+    );
   } catch (error) {
-    logger.warn({
-      tags: "main|dev|hot-reload|error",
-      color1: "yellow",
-      color2: "orange"
-    }, `Hot reloading not available: ${error?.message || error}`);
+    logger.warn(
+      {
+        tags: "main|dev|hot-reload|error",
+        color1: "yellow",
+        color2: "orange",
+      },
+      `Hot reloading not available: ${error?.message || error}`
+    );
   }
 }
 
@@ -119,21 +129,27 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
 
   // Register a special IPC handler for preload script to get API configs
-  ipcMain.on('get-manager-api-configs', (event) => {
+  ipcMain.on("get-manager-api-configs", (event) => {
     try {
       event.returnValue = mainApp.preloadAPIs || [];
     } catch (error) {
-      logger.error({
-        tags: "main|ipc|preload|error",
-        color1: "red",
-        color2: "orange"
-      }, "Failed to send manager API configs:", error);
+      logger.error(
+        {
+          tags: "main|ipc|preload|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Failed to send manager API configs:",
+        error
+      );
       event.returnValue = [];
     }
   });
 
   // Get WindowManager reference
-  const windowManager = mainApp.managers.find(m => m.constructor.name === 'WindowManager');
+  const windowManager = mainApp.managers.find(
+    (m) => m.constructor.name === "WindowManager"
+  );
 
   // Create the main window (state will be applied before showing)
   createWindow(windowManager);
@@ -145,12 +161,15 @@ app.whenReady().then(async () => {
   if (windowManager) {
     windowManager.setupWindowListeners();
   } else {
-    logger.error({
-      tags: "main|window|manager|error",
-      color1: "red",
-      color2: "orange",
-      includeSource: true
-    }, "WindowManager not found!");
+    logger.error(
+      {
+        tags: "main|window|manager|error",
+        color1: "red",
+        color2: "orange",
+        includeSource: true,
+      },
+      "WindowManager not found!"
+    );
   }
 
   app.on("activate", () => {

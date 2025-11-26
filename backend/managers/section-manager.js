@@ -9,19 +9,22 @@ const __dirname = path.dirname(__filename);
 export class SectionManager extends Manager {
   constructor() {
     super();
-    this.currentSection = 'main';
-    this.sectionsPath = path.join(__dirname, '../../frontend/sections');
+    this.currentSection = "main";
+    this.sectionsPath = path.join(__dirname, "../../frontend/sections");
     this.logger = new Logger();
   }
 
   async init() {
     // Note: mainWindow may not be available yet during initialization
     // We'll check for it when actually switching sections
-    this.logger.log({
-      tags: "section|manager|init",
-      color1: "green",
-      includeSource: true
-    }, "SectionManager initialized");
+    this.logger.log(
+      {
+        tags: "section|manager|init",
+        color1: "green",
+        includeSource: true,
+      },
+      "SectionManager initialized"
+    );
   }
 
   /**
@@ -31,20 +34,23 @@ export class SectionManager extends Manager {
    */
   async switchToSection(sectionName) {
     try {
-      this.logger.log({
-        tags: "section|manager|switch",
-        color1: "blue",
-        includeSource: true
-      }, `Switching to section '${sectionName}'`);
+      this.logger.log(
+        {
+          tags: "section|manager|switch",
+          color1: "blue",
+          includeSource: true,
+        },
+        `Switching to section '${sectionName}'`
+      );
 
       // Check if main window is available
       if (!this.app || !this.app.mainWindow) {
-        throw new Error('Main window not available for section switching');
+        throw new Error("Main window not available for section switching");
       }
 
       // Validate section exists
       const sectionPath = path.join(this.sectionsPath, sectionName);
-      const htmlFile = path.join(sectionPath, 'index.html');
+      const htmlFile = path.join(sectionPath, "index.html");
 
       // Check if section directory and HTML file exist
       if (!fs.existsSync(sectionPath)) {
@@ -59,19 +65,26 @@ export class SectionManager extends Manager {
       await this.app.mainWindow.loadFile(htmlFile);
 
       this.currentSection = sectionName;
-      this.logger.log({
-        tags: "section|manager|switch|success",
-        color1: "green"
-      }, `Successfully switched to section '${sectionName}'`);
+      this.logger.log(
+        {
+          tags: "section|manager|switch|success",
+          color1: "green",
+        },
+        `Successfully switched to section '${sectionName}'`
+      );
 
       return true;
     } catch (error) {
-      this.logger.error({
-        tags: "section|manager|switch|error",
-        color1: "red",
-        color2: "orange",
-        includeSource: true
-      }, `Failed to switch to section '${sectionName}':`, error);
+      this.logger.error(
+        {
+          tags: "section|manager|switch|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        `Failed to switch to section '${sectionName}':`,
+        error
+      );
       return false;
     }
   }
@@ -90,29 +103,39 @@ export class SectionManager extends Manager {
    */
   async listSections() {
     try {
-      const entries = fs.readdirSync(this.sectionsPath, { withFileTypes: true });
+      const entries = fs.readdirSync(this.sectionsPath, {
+        withFileTypes: true,
+      });
       const sections = [];
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const sectionName = entry.name;
-          const htmlFile = path.join(this.sectionsPath, sectionName, 'index.html');
+          const htmlFile = path.join(
+            this.sectionsPath,
+            sectionName,
+            "index.html"
+          );
           const hasIndexHtml = fs.existsSync(htmlFile);
 
           sections.push({
             name: sectionName,
-            hasIndexHtml: hasIndexHtml
+            hasIndexHtml: hasIndexHtml,
           });
         }
       }
 
       return sections;
     } catch (error) {
-      this.logger.error({
-        tags: "section|manager|list|error",
-        color1: "red",
-        color2: "orange"
-      }, "Failed to list sections:", error);
+      this.logger.error(
+        {
+          tags: "section|manager|list|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Failed to list sections:",
+        error
+      );
       return [];
     }
   }
@@ -125,7 +148,7 @@ export class SectionManager extends Manager {
   async sectionExists(sectionName) {
     try {
       const sections = await this.listSections();
-      const section = sections.find(s => s.name === sectionName);
+      const section = sections.find((s) => s.name === sectionName);
       return section && section.hasIndexHtml;
     } catch (error) {
       return false;
@@ -137,13 +160,13 @@ export class SectionManager extends Manager {
    */
   initPreload() {
     return {
-      name: 'SectionManager',
+      name: "SectionManager",
       api: {
-        switchToSection: { channel: 'SectionManager:switchToSection' },
-        getCurrentSection: { channel: 'SectionManager:getCurrentSection' },
-        listSections: { channel: 'SectionManager:listSections' },
-        sectionExists: { channel: 'SectionManager:sectionExists' }
-      }
+        switchToSection: { channel: "SectionManager:switchToSection" },
+        getCurrentSection: { channel: "SectionManager:getCurrentSection" },
+        listSections: { channel: "SectionManager:listSections" },
+        sectionExists: { channel: "SectionManager:sectionExists" },
+      },
     };
   }
 }

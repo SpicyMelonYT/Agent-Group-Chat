@@ -2,23 +2,23 @@ const OPERATOR_TOKENS = new Set(["+", "-", "*", "&", "|", "(", ")", "!"]);
 
 // ANSI color codes for Node.js console
 const ANSI_COLORS = {
-  black: '\x1b[30m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  gray: '\x1b[90m',
-  brightRed: '\x1b[91m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightBlue: '\x1b[94m',
-  brightMagenta: '\x1b[95m',
-  brightCyan: '\x1b[96m',
-  brightWhite: '\x1b[97m',
-  reset: '\x1b[0m'
+  black: "\x1b[30m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+  white: "\x1b[37m",
+  gray: "\x1b[90m",
+  brightRed: "\x1b[91m",
+  brightGreen: "\x1b[92m",
+  brightYellow: "\x1b[93m",
+  brightBlue: "\x1b[94m",
+  brightMagenta: "\x1b[95m",
+  brightCyan: "\x1b[96m",
+  brightWhite: "\x1b[97m",
+  reset: "\x1b[0m",
 };
 
 export class Logger {
@@ -61,11 +61,21 @@ export class Logger {
 
   _emit(fn, settings, messages) {
     // Ensure settings is processed as an object
-    if (settings === null || settings === undefined || typeof settings !== 'object' || Array.isArray(settings)) {
-      console.warn('[Logger] Settings parameter should be an object. Received:', typeof settings, settings);
+    if (
+      settings === null ||
+      settings === undefined ||
+      typeof settings !== "object" ||
+      Array.isArray(settings)
+    ) {
+      console.warn(
+        "[Logger] Settings parameter should be an object. Received:",
+        typeof settings,
+        settings
+      );
     }
 
-    const { tags, colors, includeSource, sourceDepth, sourcePosition } = this._normalizeTags(settings);
+    const { tags, colors, includeSource, sourceDepth, sourcePosition } =
+      this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;
     }
@@ -77,7 +87,7 @@ export class Logger {
 
     // Apply ANSI colors if specified
     if (colors.color1 || colors.color2) {
-      let output = '';
+      let output = "";
 
       // Add source info at start if requested (before tag)
       if (callerInfo && sourcePosition === "start") {
@@ -85,14 +95,14 @@ export class Logger {
       }
 
       // Apply color1 to tags if specified, otherwise use default
-      const tagColor = colors.color1 ? this._getAnsiColor(colors.color1) : '';
-      const tagReset = colors.color1 ? ANSI_COLORS.reset : '';
+      const tagColor = colors.color1 ? this._getAnsiColor(colors.color1) : "";
+      const tagReset = colors.color1 ? ANSI_COLORS.reset : "";
       output += `${tagColor}[${displayLabel}]${tagReset}`;
 
       // Add messages with color2 if specified, otherwise use default
       messages.forEach((msg) => {
-        const msgColor = colors.color2 ? this._getAnsiColor(colors.color2) : '';
-        const msgReset = colors.color2 ? ANSI_COLORS.reset : '';
+        const msgColor = colors.color2 ? this._getAnsiColor(colors.color2) : "";
+        const msgReset = colors.color2 ? ANSI_COLORS.reset : "";
         output += ` ${msgColor}${msg}${msgReset}`;
       });
 
@@ -144,7 +154,9 @@ export class Logger {
 
     // If no individual tags matched but the full set did, fall back to showing all tags
     // This handles complex patterns where tags work together
-    return matchingTags.length > 0 ? matchingTags.join("|") : Array.from(tags).join("|");
+    return matchingTags.length > 0
+      ? matchingTags.join("|")
+      : Array.from(tags).join("|");
   }
 
   _normalizeTags(tagInput) {
@@ -155,14 +167,25 @@ export class Logger {
     let sourcePosition = "end";
 
     // Handle object input with tag and color properties
-    if (tagInput && typeof tagInput === 'object' && !Array.isArray(tagInput) && !(tagInput instanceof Set)) {
+    if (
+      tagInput &&
+      typeof tagInput === "object" &&
+      !Array.isArray(tagInput) &&
+      !(tagInput instanceof Set)
+    ) {
       // Extract tag information
       const tagValue = tagInput.tag || tagInput.tags;
       if (tagValue) {
         if (tagValue instanceof Set) {
-          tags = new Set(Array.from(tagValue).map((tag) => String(tag).trim()).filter(Boolean));
+          tags = new Set(
+            Array.from(tagValue)
+              .map((tag) => String(tag).trim())
+              .filter(Boolean)
+          );
         } else if (Array.isArray(tagValue)) {
-          tags = new Set(tagValue.map((tag) => String(tag).trim()).filter(Boolean));
+          tags = new Set(
+            tagValue.map((tag) => String(tag).trim()).filter(Boolean)
+          );
         } else {
           const raw = String(tagValue).split("|");
           tags = new Set(raw.map((tag) => String(tag).trim()).filter(Boolean));
@@ -209,9 +232,7 @@ export class Logger {
         ? tagInput
         : String(tagInput ?? "").split("|");
 
-      const tagArray = raw
-        .map((tag) => String(tag).trim())
-        .filter(Boolean);
+      const tagArray = raw.map((tag) => String(tag).trim()).filter(Boolean);
 
       tags = new Set(tagArray);
     }
@@ -382,7 +403,10 @@ export class Logger {
     const callerLine = targetLine.replace(/^at\s+/, "");
 
     const pathSegment = callerLine.includes("(")
-      ? callerLine.slice(callerLine.indexOf("(") + 1, callerLine.lastIndexOf(")"))
+      ? callerLine.slice(
+          callerLine.indexOf("(") + 1,
+          callerLine.lastIndexOf(")")
+        )
       : callerLine;
 
     const match = pathSegment.match(/^(.*):(\d+)(?::(\d+))?$/);
@@ -394,9 +418,11 @@ export class Logger {
 
     // Extract relative path from project root (agent-group-chat folder)
     let relativePath = filePath;
-    const projectRootIndex = filePath.indexOf('agent-group-chat');
+    const projectRootIndex = filePath.indexOf("agent-group-chat");
     if (projectRootIndex !== -1) {
-      relativePath = filePath.substring(projectRootIndex + 'agent-group-chat'.length + 1); // +1 for the separator
+      relativePath = filePath.substring(
+        projectRootIndex + "agent-group-chat".length + 1
+      ); // +1 for the separator
     }
 
     const location = [line, column].filter(Boolean).join(":");
@@ -406,31 +432,33 @@ export class Logger {
   _getAnsiColor(colorName) {
     // Map common color names to ANSI colors
     const colorMap = {
-      'black': 'black',
-      'red': 'red',
-      'green': 'green',
-      'yellow': 'yellow',
-      'blue': 'blue',
-      'magenta': 'magenta',
-      'cyan': 'cyan',
-      'white': 'white',
-      'gray': 'gray',
-      'grey': 'gray',
-      'brightred': 'brightRed',
-      'brightgreen': 'brightGreen',
-      'brightyellow': 'brightYellow',
-      'brightblue': 'brightBlue',
-      'brightmagenta': 'brightMagenta',
-      'brightcyan': 'brightCyan',
-      'brightwhite': 'brightWhite',
-      'lime': 'brightGreen',
-      'orange': 'brightYellow',
-      'purple': 'magenta',
-      'pink': 'brightMagenta'
+      black: "black",
+      red: "red",
+      green: "green",
+      yellow: "yellow",
+      blue: "blue",
+      magenta: "magenta",
+      cyan: "cyan",
+      white: "white",
+      gray: "gray",
+      grey: "gray",
+      brightred: "brightRed",
+      brightgreen: "brightGreen",
+      brightyellow: "brightYellow",
+      brightblue: "brightBlue",
+      brightmagenta: "brightMagenta",
+      brightcyan: "brightCyan",
+      brightwhite: "brightWhite",
+      lime: "brightGreen",
+      orange: "brightYellow",
+      purple: "magenta",
+      pink: "brightMagenta",
     };
 
-    const normalizedColor = String(colorName).toLowerCase().replace(/[^a-z]/g, '');
-    const ansiColor = colorMap[normalizedColor] || 'white';
+    const normalizedColor = String(colorName)
+      .toLowerCase()
+      .replace(/[^a-z]/g, "");
+    const ansiColor = colorMap[normalizedColor] || "white";
 
     return ANSI_COLORS[ansiColor] || ANSI_COLORS.white;
   }

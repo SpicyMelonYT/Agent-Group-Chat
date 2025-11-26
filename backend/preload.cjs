@@ -1,10 +1,10 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron");
 
 // Get the manager-defined API configurations from the main process
-const managerAPIConfigs = ipcRenderer.sendSync('get-manager-api-configs');
+const managerAPIConfigs = ipcRenderer.sendSync("get-manager-api-configs");
 
 // Expose core Electron APIs
-contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld("electronAPI", {
   // Core Electron APIs
   platform: process.platform,
   versions: {
@@ -23,14 +23,15 @@ for (const managerConfig of managerAPIConfigs) {
     // Create the API functions for this manager
     const managerAPIs = {};
     for (const [apiName, config] of Object.entries(managerConfig.api)) {
-      if (config && typeof config === 'object') {
-        if (config.type === 'eventListener') {
+      if (config && typeof config === "object") {
+        if (config.type === "eventListener") {
           // Create an event listener function
           managerAPIs[apiName] = (callback) => {
             const listener = (event, ...args) => callback(...args);
             ipcRenderer.on(config.eventChannel, listener);
             // Return cleanup function
-            return () => ipcRenderer.removeListener(config.eventChannel, listener);
+            return () =>
+              ipcRenderer.removeListener(config.eventChannel, listener);
           };
         } else if (config.channel) {
           // Create a function that calls ipcRenderer.invoke with the specified channel
@@ -65,7 +66,10 @@ for (const managerConfig of managerAPIConfigs) {
             // Call the frontend's async callback
             await asyncCallback(changeData);
           } catch (error) {
-            console.error(`Error in file watcher callback for ${filePath}:`, error);
+            console.error(
+              `Error in file watcher callback for ${filePath}:`,
+              error
+            );
           }
         };
 
@@ -83,7 +87,8 @@ for (const managerConfig of managerAPIConfigs) {
     }
 
     // Expose this manager's API with nicer naming (lowercase + API suffix)
-    const apiName = managerConfig.name.toLowerCase().replace('manager', '') + 'API';
+    const apiName =
+      managerConfig.name.toLowerCase().replace("manager", "") + "API";
     contextBridge.exposeInMainWorld(apiName, managerAPIs);
   }
 }

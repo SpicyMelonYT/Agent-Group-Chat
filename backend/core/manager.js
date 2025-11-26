@@ -25,7 +25,7 @@ export class Manager {
         //   channel: 'ipc-channel-name', // for invoke/handle
         //   type: 'eventListener', eventChannel: 'event-channel' // for events
         // }
-      }
+      },
     };
   }
 }

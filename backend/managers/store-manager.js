@@ -17,32 +17,46 @@ export class StoreManager extends Manager {
 
   async init() {
     try {
-      this.logger.log({
-        tags: "store|manager|init",
-        color1: "blue",
-        includeSource: true
-      }, "StoreManager starting initialization");
+      this.logger.log(
+        {
+          tags: "store|manager|init",
+          color1: "blue",
+          includeSource: true,
+        },
+        "StoreManager starting initialization"
+      );
 
       // Initialize store path using Electron's userData folder
       this.basePath = path.join(app.getPath("userData"), "App");
-      this.logger.log({
-        tags: "store|manager|init",
-        color1: "cyan"
-      }, "Base path set to:", this.basePath);
+      this.logger.log(
+        {
+          tags: "store|manager|init",
+          color1: "cyan",
+        },
+        "Base path set to:",
+        this.basePath
+      );
 
       // Ensure the data directory exists
       await this.ensureDirectoryExists(this.basePath);
-      this.logger.log({
-        tags: "store|manager|init",
-        color1: "green"
-      }, "Data directory ensured, initialization complete");
+      this.logger.log(
+        {
+          tags: "store|manager|init",
+          color1: "green",
+        },
+        "Data directory ensured, initialization complete"
+      );
     } catch (error) {
-      this.logger.error({
-        tags: "store|manager|error",
-        color1: "red",
-        color2: "orange",
-        includeSource: true
-      }, "Failed to initialize StoreManager:", error);
+      this.logger.error(
+        {
+          tags: "store|manager|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        "Failed to initialize StoreManager:",
+        error
+      );
       throw error;
     }
   }
@@ -55,7 +69,7 @@ export class StoreManager extends Manager {
     try {
       await fs.promises.mkdir(dirPath, { recursive: true });
     } catch (error) {
-      if (error.code !== 'EEXIST') {
+      if (error.code !== "EEXIST") {
         throw error;
       }
     }
@@ -70,7 +84,7 @@ export class StoreManager extends Manager {
     // Prevent directory traversal attacks
     const resolved = path.resolve(this.basePath, filePath);
     if (!resolved.startsWith(this.basePath)) {
-      throw new Error('Access denied: Path outside of allowed directory');
+      throw new Error("Access denied: Path outside of allowed directory");
     }
     return resolved;
   }
@@ -83,7 +97,7 @@ export class StoreManager extends Manager {
    * @param {string} encoding - Text encoding (default: 'utf8')
    * @returns {Promise<string>}
    */
-  async readText(filePath, encoding = 'utf8') {
+  async readText(filePath, encoding = "utf8") {
     try {
       const fullPath = this.resolvePath(filePath);
       return await fs.promises.readFile(fullPath, encoding);
@@ -98,13 +112,15 @@ export class StoreManager extends Manager {
    * @param {string} content - Text content to write
    * @param {string} encoding - Text encoding (default: 'utf8')
    */
-  async writeText(filePath, content, encoding = 'utf8') {
+  async writeText(filePath, content, encoding = "utf8") {
     try {
       const fullPath = this.resolvePath(filePath);
       await this.ensureDirectoryExists(path.dirname(fullPath));
       await fs.promises.writeFile(fullPath, content, encoding);
     } catch (error) {
-      throw new Error(`Failed to write text file ${filePath}: ${error.message}`);
+      throw new Error(
+        `Failed to write text file ${filePath}: ${error.message}`
+      );
     }
   }
 
@@ -120,7 +136,9 @@ export class StoreManager extends Manager {
     try {
       return JSON.parse(content);
     } catch (error) {
-      throw new Error(`Failed to parse JSON file ${filePath}: ${error.message}`);
+      throw new Error(
+        `Failed to parse JSON file ${filePath}: ${error.message}`
+      );
     }
   }
 
@@ -135,9 +153,8 @@ export class StoreManager extends Manager {
     await this.writeText(filePath, content);
 
     // Notify any watchers of this file change
-    await this.notifyFileWatchers('update', filePath, data);
+    await this.notifyFileWatchers("update", filePath, data);
   }
-
 
   // ===== FILE SYSTEM OPERATIONS =====
 
@@ -153,7 +170,9 @@ export class StoreManager extends Manager {
       await this.ensureDirectoryExists(path.dirname(fullToPath));
       await fs.promises.rename(fullFromPath, fullToPath);
     } catch (error) {
-      throw new Error(`Failed to move ${fromPath} to ${toPath}: ${error.message}`);
+      throw new Error(
+        `Failed to move ${fromPath} to ${toPath}: ${error.message}`
+      );
     }
   }
 
@@ -169,7 +188,9 @@ export class StoreManager extends Manager {
       await this.ensureDirectoryExists(path.dirname(fullToPath));
       await fs.promises.copyFile(fullFromPath, fullToPath);
     } catch (error) {
-      throw new Error(`Failed to copy ${fromPath} to ${toPath}: ${error.message}`);
+      throw new Error(
+        `Failed to copy ${fromPath} to ${toPath}: ${error.message}`
+      );
     }
   }
 
@@ -188,7 +209,7 @@ export class StoreManager extends Manager {
         await fs.promises.unlink(fullPath);
       }
     } catch (error) {
-      if (error.code !== 'ENOENT') {
+      if (error.code !== "ENOENT") {
         throw new Error(`Failed to delete ${filePath}: ${error.message}`);
       }
     }
@@ -199,10 +220,12 @@ export class StoreManager extends Manager {
    * @param {string} dirPath - Directory path to list
    * @returns {Promise<Array<{name: string, type: 'file'|'directory', size?: number}>>}
    */
-  async list(dirPath = '') {
+  async list(dirPath = "") {
     try {
       const fullPath = this.resolvePath(dirPath);
-      const entries = await fs.promises.readdir(fullPath, { withFileTypes: true });
+      const entries = await fs.promises.readdir(fullPath, {
+        withFileTypes: true,
+      });
 
       const results = [];
       for (const entry of entries) {
@@ -220,8 +243,8 @@ export class StoreManager extends Manager {
 
         results.push({
           name: entry.name,
-          type: entry.isDirectory() ? 'directory' : 'file',
-          size
+          type: entry.isDirectory() ? "directory" : "file",
+          size,
         });
       }
 
@@ -260,7 +283,7 @@ export class StoreManager extends Manager {
         size: stat.size,
         created: stat.birthtime,
         modified: stat.mtime,
-        type: stat.isDirectory() ? 'directory' : 'file'
+        type: stat.isDirectory() ? "directory" : "file",
       };
     } catch (error) {
       throw new Error(`Failed to get stats for ${filePath}: ${error.message}`);
@@ -272,49 +295,48 @@ export class StoreManager extends Manager {
    */
   initPreload() {
     return {
-      name: 'StoreManager',
+      name: "StoreManager",
       api: {
         // Text file operations
-        readText: { channel: 'StoreManager:readText' },
-        writeText: { channel: 'StoreManager:writeText' },
+        readText: { channel: "StoreManager:readText" },
+        writeText: { channel: "StoreManager:writeText" },
 
         // JSON file operations
-        readJSON: { channel: 'StoreManager:readJSON' },
-        writeJSON: { channel: 'StoreManager:writeJSON' },
-
+        readJSON: { channel: "StoreManager:readJSON" },
+        writeJSON: { channel: "StoreManager:writeJSON" },
 
         // File system operations
-        move: { channel: 'StoreManager:move' },
-        copy: { channel: 'StoreManager:copy' },
-        delete: { channel: 'StoreManager:delete' },
-        list: { channel: 'StoreManager:list' },
-        exists: { channel: 'StoreManager:exists' },
-        stats: { channel: 'StoreManager:stats' },
+        move: { channel: "StoreManager:move" },
+        copy: { channel: "StoreManager:copy" },
+        delete: { channel: "StoreManager:delete" },
+        list: { channel: "StoreManager:list" },
+        exists: { channel: "StoreManager:exists" },
+        stats: { channel: "StoreManager:stats" },
 
         // File watching system
-        watchFile: { channel: 'StoreManager:watchFile' },
-        unwatchFile: { channel: 'StoreManager:unwatchFile' },
+        watchFile: { channel: "StoreManager:watchFile" },
+        unwatchFile: { channel: "StoreManager:unwatchFile" },
 
         // Archive system
-        createArchive: { channel: 'StoreManager:createArchive' },
-        deleteArchive: { channel: 'StoreManager:deleteArchive' },
-        listArchives: { channel: 'StoreManager:listArchives' },
-        archiveExists: { channel: 'StoreManager:archiveExists' },
+        createArchive: { channel: "StoreManager:createArchive" },
+        deleteArchive: { channel: "StoreManager:deleteArchive" },
+        listArchives: { channel: "StoreManager:listArchives" },
+        archiveExists: { channel: "StoreManager:archiveExists" },
 
         // Entry system
-        createEntry: { channel: 'StoreManager:createEntry' },
-        deleteEntry: { channel: 'StoreManager:deleteEntry' },
-        listEntries: { channel: 'StoreManager:listEntries' },
-        entryExists: { channel: 'StoreManager:entryExists' },
+        createEntry: { channel: "StoreManager:createEntry" },
+        deleteEntry: { channel: "StoreManager:deleteEntry" },
+        listEntries: { channel: "StoreManager:listEntries" },
+        entryExists: { channel: "StoreManager:entryExists" },
 
         // Entry data operations
-        storeEntryData: { channel: 'StoreManager:storeEntryData' },
-        storeEntryJSON: { channel: 'StoreManager:storeEntryJSON' },
-        getEntryData: { channel: 'StoreManager:getEntryData' },
-        getEntryJSON: { channel: 'StoreManager:getEntryJSON' },
-        listEntryData: { channel: 'StoreManager:listEntryData' },
-        deleteEntryData: { channel: 'StoreManager:deleteEntryData' }
-      }
+        storeEntryData: { channel: "StoreManager:storeEntryData" },
+        storeEntryJSON: { channel: "StoreManager:storeEntryJSON" },
+        getEntryData: { channel: "StoreManager:getEntryData" },
+        getEntryJSON: { channel: "StoreManager:getEntryJSON" },
+        listEntryData: { channel: "StoreManager:listEntryData" },
+        deleteEntryData: { channel: "StoreManager:deleteEntryData" },
+      },
     };
   }
 
@@ -351,18 +373,22 @@ export class StoreManager extends Manager {
     if (this.app && this.app.mainWindow) {
       try {
         // Send notification to frontend watcher (fire-and-forget, but watcher can be async)
-        this.app.mainWindow.webContents.send('storeWatcher:' + watcherId, {
+        this.app.mainWindow.webContents.send("storeWatcher:" + watcherId, {
           action,
           filePath,
           data,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       } catch (error) {
-        this.logger.error({
-          tags: "store|watcher|error",
-          color1: "red",
-          color2: "orange"
-        }, `Error notifying file watcher for ${filePath}:`, error);
+        this.logger.error(
+          {
+            tags: "store|watcher|error",
+            color1: "red",
+            color2: "orange",
+          },
+          `Error notifying file watcher for ${filePath}:`,
+          error
+        );
       }
     }
   }
@@ -378,7 +404,9 @@ export class StoreManager extends Manager {
       const archivePath = `archives/${archiveName}`;
       await this.ensureDirectoryExists(this.resolvePath(archivePath));
     } catch (error) {
-      throw new Error(`Failed to create archive ${archiveName}: ${error.message}`);
+      throw new Error(
+        `Failed to create archive ${archiveName}: ${error.message}`
+      );
     }
   }
 
@@ -391,7 +419,9 @@ export class StoreManager extends Manager {
       const archivePath = `archives/${archiveName}`;
       await this.delete(archivePath);
     } catch (error) {
-      throw new Error(`Failed to delete archive ${archiveName}: ${error.message}`);
+      throw new Error(
+        `Failed to delete archive ${archiveName}: ${error.message}`
+      );
     }
   }
 
@@ -401,7 +431,7 @@ export class StoreManager extends Manager {
    */
   async listArchives() {
     try {
-      return await this.list('archives');
+      return await this.list("archives");
     } catch (error) {
       throw new Error(`Failed to list archives: ${error.message}`);
     }
@@ -434,7 +464,9 @@ export class StoreManager extends Manager {
       await this.ensureDirectoryExists(this.resolvePath(entryPath));
       return entryId;
     } catch (error) {
-      throw new Error(`Failed to create entry in archive ${archiveName}: ${error.message}`);
+      throw new Error(
+        `Failed to create entry in archive ${archiveName}: ${error.message}`
+      );
     }
   }
 
@@ -448,7 +480,9 @@ export class StoreManager extends Manager {
       const entryPath = `archives/${archiveName}/${entryId}`;
       await this.delete(entryPath);
     } catch (error) {
-      throw new Error(`Failed to delete entry ${entryId} from archive ${archiveName}: ${error.message}`);
+      throw new Error(
+        `Failed to delete entry ${entryId} from archive ${archiveName}: ${error.message}`
+      );
     }
   }
 
@@ -460,13 +494,15 @@ export class StoreManager extends Manager {
   async listEntries(archiveName) {
     try {
       const entries = await this.list(`archives/${archiveName}`);
-      return entries.map(entry => ({
+      return entries.map((entry) => ({
         id: entry.name,
         path: `archives/${archiveName}/${entry.name}`,
-        type: entry.type
+        type: entry.type,
       }));
     } catch (error) {
-      throw new Error(`Failed to list entries in archive ${archiveName}: ${error.message}`);
+      throw new Error(
+        `Failed to list entries in archive ${archiveName}: ${error.message}`
+      );
     }
   }
 
@@ -498,7 +534,9 @@ export class StoreManager extends Manager {
       const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
       await this.writeText(fullPath, content);
     } catch (error) {
-      throw new Error(`Failed to store data in entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to store data in entry ${entryId}: ${error.message}`
+      );
     }
   }
 
@@ -514,7 +552,9 @@ export class StoreManager extends Manager {
       const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
       await this.writeJSON(fullPath, data);
     } catch (error) {
-      throw new Error(`Failed to store JSON data in entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to store JSON data in entry ${entryId}: ${error.message}`
+      );
     }
   }
 
@@ -530,7 +570,9 @@ export class StoreManager extends Manager {
       const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
       return await this.readText(fullPath);
     } catch (error) {
-      throw new Error(`Failed to get data from entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to get data from entry ${entryId}: ${error.message}`
+      );
     }
   }
 
@@ -546,7 +588,9 @@ export class StoreManager extends Manager {
       const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
       return await this.readJSON(fullPath);
     } catch (error) {
-      throw new Error(`Failed to get JSON data from entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to get JSON data from entry ${entryId}: ${error.message}`
+      );
     }
   }
 
@@ -557,13 +601,15 @@ export class StoreManager extends Manager {
    * @param {string} subPath - Optional subpath within the entry (default: root)
    * @returns {Promise<Array<{name: string, type: 'file'|'directory', size?: number}>>}
    */
-  async listEntryData(archiveName, entryId, subPath = '') {
+  async listEntryData(archiveName, entryId, subPath = "") {
     try {
       const entryPath = `archives/${archiveName}/${entryId}`;
       const fullPath = subPath ? `${entryPath}/${subPath}` : entryPath;
       return await this.list(fullPath);
     } catch (error) {
-      throw new Error(`Failed to list data in entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to list data in entry ${entryId}: ${error.message}`
+      );
     }
   }
 
@@ -578,7 +624,9 @@ export class StoreManager extends Manager {
       const fullPath = `archives/${archiveName}/${entryId}/${dataPath}`;
       await this.delete(fullPath);
     } catch (error) {
-      throw new Error(`Failed to delete data from entry ${entryId}: ${error.message}`);
+      throw new Error(
+        `Failed to delete data from entry ${entryId}: ${error.message}`
+      );
     }
   }
 }

@@ -4,7 +4,7 @@ import { app, screen } from "electron";
 export class WindowManager extends Manager {
   constructor() {
     super();
-    this.configFile = 'window-config.json';
+    this.configFile = "window-config.json";
     this.config = null;
     this.isInitialized = false;
     this.isApplyingState = false; // Flag to prevent event listeners during state application
@@ -15,13 +15,17 @@ export class WindowManager extends Manager {
     try {
       // Ensure we have access to the StoreManager
       if (!this.app) {
-        throw new Error('WindowManager requires an app instance');
+        throw new Error("WindowManager requires an app instance");
       }
 
       // Get the StoreManager instance
-      const storeManager = this.app.managers.find(m => m.constructor.name === 'StoreManager');
+      const storeManager = this.app.managers.find(
+        (m) => m.constructor.name === "StoreManager"
+      );
       if (!storeManager) {
-        throw new Error('WindowManager requires StoreManager to be initialized first');
+        throw new Error(
+          "WindowManager requires StoreManager to be initialized first"
+        );
       }
 
       this.storeManager = storeManager;
@@ -31,12 +35,16 @@ export class WindowManager extends Manager {
 
       this.isInitialized = true;
     } catch (error) {
-      this.logger.error({
-        tags: "window|manager|error",
-        color1: "red",
-        color2: "orange",
-        includeSource: true
-      }, "WindowManager initialization failed:", error);
+      this.logger.error(
+        {
+          tags: "window|manager|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        "WindowManager initialization failed:",
+        error
+      );
       throw error;
     }
   }
@@ -57,7 +65,7 @@ export class WindowManager extends Manager {
         height: 800,
         maximized: false,
         fullscreen: false,
-        minimized: false
+        minimized: false,
       };
 
       // Save default config
@@ -71,31 +79,42 @@ export class WindowManager extends Manager {
    */
   setupWindowListeners() {
     if (!this.app || !this.app.mainWindow) {
-      this.logger.warn({
-        tags: "window|manager|warning",
-        color1: "yellow",
-        color2: "orange"
-      }, "No main window available for event listeners");
+      this.logger.warn(
+        {
+          tags: "window|manager|warning",
+          color1: "yellow",
+          color2: "orange",
+        },
+        "No main window available for event listeners"
+      );
       return;
     }
 
     const window = this.app.mainWindow;
 
     // Save position and size when window is moved or resized
-    window.on('move', () => {
-      if (!this.isApplyingState && !window.isMaximized() && !window.isFullScreen()) {
+    window.on("move", () => {
+      if (
+        !this.isApplyingState &&
+        !window.isMaximized() &&
+        !window.isFullScreen()
+      ) {
         this.saveCurrentState();
       }
     });
 
-    window.on('resize', () => {
-      if (!this.isApplyingState && !window.isMaximized() && !window.isFullScreen()) {
+    window.on("resize", () => {
+      if (
+        !this.isApplyingState &&
+        !window.isMaximized() &&
+        !window.isFullScreen()
+      ) {
         this.saveCurrentState();
       }
     });
 
     // Save state when maximized/minimized/fullscreen changes
-    window.on('maximize', () => {
+    window.on("maximize", () => {
       if (!this.isApplyingState) {
         this.config.maximized = true;
         this.config.fullscreen = false;
@@ -103,14 +122,14 @@ export class WindowManager extends Manager {
       }
     });
 
-    window.on('unmaximize', () => {
+    window.on("unmaximize", () => {
       if (!this.isApplyingState) {
         this.config.maximized = false;
         this.saveConfig();
       }
     });
 
-    window.on('enter-full-screen', () => {
+    window.on("enter-full-screen", () => {
       if (!this.isApplyingState) {
         this.config.fullscreen = true;
         this.config.maximized = false;
@@ -118,21 +137,21 @@ export class WindowManager extends Manager {
       }
     });
 
-    window.on('leave-full-screen', () => {
+    window.on("leave-full-screen", () => {
       if (!this.isApplyingState) {
         this.config.fullscreen = false;
         this.saveConfig();
       }
     });
 
-    window.on('minimize', () => {
+    window.on("minimize", () => {
       if (!this.isApplyingState) {
         this.config.minimized = true;
         this.saveConfig();
       }
     });
 
-    window.on('restore', () => {
+    window.on("restore", () => {
       if (!this.isApplyingState) {
         this.config.minimized = false;
         this.saveConfig();
@@ -171,11 +190,15 @@ export class WindowManager extends Manager {
     try {
       await this.storeManager.writeJSON(this.configFile, this.config);
     } catch (error) {
-      this.logger.error({
-        tags: "window|config|error",
-        color1: "red",
-        color2: "orange"
-      }, "Failed to save window config:", error);
+      this.logger.error(
+        {
+          tags: "window|config|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Failed to save window config:",
+        error
+      );
     }
   }
 
@@ -201,10 +224,12 @@ export class WindowManager extends Manager {
         // Check if position is within any display bounds
         for (const display of displays) {
           const bounds = display.bounds;
-          if (this.config.x >= bounds.x &&
-              this.config.x < bounds.x + bounds.width &&
-              this.config.y >= bounds.y &&
-              this.config.y < bounds.y + bounds.height) {
+          if (
+            this.config.x >= bounds.x &&
+            this.config.x < bounds.x + bounds.width &&
+            this.config.y >= bounds.y &&
+            this.config.y < bounds.y + bounds.height
+          ) {
             positionValid = true;
             break;
           }
@@ -215,7 +240,7 @@ export class WindowManager extends Manager {
             x: this.config.x,
             y: this.config.y,
             width: this.config.width,
-            height: this.config.height
+            height: this.config.height,
           });
         } else {
           // Position is off-screen, center instead
@@ -248,15 +273,18 @@ export class WindowManager extends Manager {
         // No special state to apply
         this.isApplyingState = false;
       }
-
     } catch (error) {
       this.isApplyingState = false;
-      this.logger.error({
-        tags: "window|state|error",
-        color1: "red",
-        color2: "orange",
-        includeSource: true
-      }, "Failed to apply saved window state:", error);
+      this.logger.error(
+        {
+          tags: "window|state|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        "Failed to apply saved window state:",
+        error
+      );
     }
   }
 
@@ -319,7 +347,7 @@ export class WindowManager extends Manager {
       size: this.getSize(),
       maximized: this.isMaximized(),
       fullscreen: this.isFullscreen(),
-      minimized: this.isMinimized()
+      minimized: this.isMinimized(),
     };
   }
 
@@ -417,31 +445,31 @@ export class WindowManager extends Manager {
    */
   initPreload() {
     return {
-      name: 'WindowManager',
+      name: "WindowManager",
       api: {
         // Window state getters
-        getPosition: { channel: 'WindowManager:getPosition' },
-        getSize: { channel: 'WindowManager:getSize' },
-        isMaximized: { channel: 'WindowManager:isMaximized' },
-        isFullscreen: { channel: 'WindowManager:isFullscreen' },
-        isMinimized: { channel: 'WindowManager:isMinimized' },
-        getWindowState: { channel: 'WindowManager:getWindowState' },
+        getPosition: { channel: "WindowManager:getPosition" },
+        getSize: { channel: "WindowManager:getSize" },
+        isMaximized: { channel: "WindowManager:isMaximized" },
+        isFullscreen: { channel: "WindowManager:isFullscreen" },
+        isMinimized: { channel: "WindowManager:isMinimized" },
+        getWindowState: { channel: "WindowManager:getWindowState" },
 
         // Window state setters
-        setPosition: { channel: 'WindowManager:setPosition' },
-        setSize: { channel: 'WindowManager:setSize' },
-        maximize: { channel: 'WindowManager:maximize' },
-        unmaximize: { channel: 'WindowManager:unmaximize' },
-        toggleFullscreen: { channel: 'WindowManager:toggleFullscreen' },
-        setFullscreen: { channel: 'WindowManager:setFullscreen' },
-        minimize: { channel: 'WindowManager:minimize' },
-        restore: { channel: 'WindowManager:restore' },
-        center: { channel: 'WindowManager:center' },
+        setPosition: { channel: "WindowManager:setPosition" },
+        setSize: { channel: "WindowManager:setSize" },
+        maximize: { channel: "WindowManager:maximize" },
+        unmaximize: { channel: "WindowManager:unmaximize" },
+        toggleFullscreen: { channel: "WindowManager:toggleFullscreen" },
+        setFullscreen: { channel: "WindowManager:setFullscreen" },
+        minimize: { channel: "WindowManager:minimize" },
+        restore: { channel: "WindowManager:restore" },
+        center: { channel: "WindowManager:center" },
 
         // Configuration management
-        applySavedState: { channel: 'WindowManager:applySavedState' },
-        saveCurrentState: { channel: 'WindowManager:saveCurrentState' }
-      }
+        applySavedState: { channel: "WindowManager:applySavedState" },
+        saveCurrentState: { channel: "WindowManager:saveCurrentState" },
+      },
     };
   }
 }
