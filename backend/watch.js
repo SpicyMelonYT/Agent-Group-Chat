@@ -25,7 +25,6 @@ class HotReloadWatcher {
     this.backendWatchPatterns = [
       'backend/**/*.js',
       'backend/**/*.json',
-      '!backend/main.js', // Exclude main.js as it can crash the app
       '!backend/preload.cjs',
       '!backend/watch.js'
     ];
@@ -134,7 +133,7 @@ class HotReloadWatcher {
     this.log('File watchers active!');
     this.log('Backend changes will restart the Electron process');
     this.log('Frontend changes will reload the Electron window');
-    this.log('Note: main.js changes are ignored to prevent crashes');
+    this.log('All backend JS files including main.js are watched');
   }
 
   start() {
@@ -166,14 +165,13 @@ class HotReloadWatcher {
   }
 }
 
-// Handle main.js changes notification
-function handleMainJsWarning() {
-  console.log('\n⚠️  WARNING: main.js changes are not watched');
-  console.log('   This prevents application crashes during development.');
-  console.log('   To test main.js changes, manually restart the application.\n');
+// Handle development notifications
+function handleDevNotifications() {
+  console.log('\nℹ️  Development mode: All backend files are watched for hot reloading');
+  console.log('   Changes to main.js will restart the Electron process.\n');
 }
 
 // Start the watcher
 const watcher = new HotReloadWatcher();
-handleMainJsWarning();
+handleDevNotifications();
 watcher.start();
