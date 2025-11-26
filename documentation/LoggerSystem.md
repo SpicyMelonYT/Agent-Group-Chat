@@ -3,6 +3,8 @@
 ## Overview
 The Logger system is a sophisticated, tag-based logging framework designed for complex application debugging and development. It provides advanced filtering capabilities, colored console output, source code location tracking, and a flexible tag pattern system that enables developers to control exactly which log messages are displayed based on customizable boolean logic expressions.
 
+The system is implemented in both **backend (Node.js)** and **frontend (browser)** environments with consistent APIs and ANSI color support for terminals.
+
 ## Logging Philosophy
 
 ### Comprehensive Development Logging
@@ -78,6 +80,20 @@ This naming strategy allows patterns like:
 - **Visual Formatting**: Structured message layout with styling
 
 ## Architecture Overview
+
+### Implementation Environments
+
+#### Backend Implementation (Node.js)
+- **Location**: `backend/core/logger.js`
+- **Color Support**: ANSI color codes for terminal output
+- **Features**: Full tag-based filtering, source location tracking, color customization
+- **Usage**: `import { Logger } from "./core/logger.js"`
+
+#### Frontend Implementation (Browser)
+- **Location**: `frontend/core/logger.js`
+- **Color Support**: CSS styling for browser console
+- **Features**: Identical API to backend logger
+- **Usage**: `import { Logger } from "./core/logger.js"`
 
 ### Core Components
 

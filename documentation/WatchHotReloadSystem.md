@@ -23,7 +23,8 @@ This project implements a comprehensive hot reloading system for Electron develo
 - **Purpose**: Manages Electron process lifecycle and file watching during development
 - **Key Features**:
   - Spawns and monitors Electron processes
-  - Restarts process on backend file changes
+  - Restarts process on backend file changes with debouncing
+  - Prevents multiple concurrent restart operations
   - Handles graceful shutdown signals
 
 #### File Watching Configuration
@@ -40,6 +41,7 @@ this.backendWatchPatterns = [
 - **Electron Spawning**: Uses Node.js `spawn()` to start Electron processes
 - **Environment Variables**: Sets `NODE_ENV: 'development'` and disables security warnings
 - **Arguments**: Passes `--dev` and `--trace-warnings` flags
+- **Restart Protection**: `isPendingRestart` flag prevents multiple concurrent restart operations
 
 ### Electron-Reload Integration
 
@@ -82,7 +84,8 @@ if (process.argv.includes("--dev")) {
 #### Backend Files (`backend/**/*.js`, `backend/**/*.json`)
 - **Trigger**: File modification, creation, or deletion
 - **Action**: Restart entire Electron process
-- **Debounce**: 500ms delay to prevent rapid consecutive restarts
+- **Debounce**: 100ms delay to prevent rapid consecutive restarts
+- **Protection**: `isPendingRestart` flag prevents overlapping restart operations
 - **Excluded Files**:
   - `preload.cjs`: Requires process restart anyway
   - `watch.js`: Avoids self-restart loops
@@ -157,8 +160,9 @@ const env = {
 ## Performance Considerations
 
 ### Debouncing
-- **Backend Restarts**: 500ms debounce prevents excessive restarts
+- **Backend Restarts**: 100ms debounce prevents excessive restarts
 - **File Stability**: 100ms stability threshold ensures complete file writes
+- **Overlapping Protection**: `isPendingRestart` flag prevents multiple concurrent restart operations
 
 ### Resource Management
 - **Process Cleanup**: Proper termination of old processes before spawning new ones
