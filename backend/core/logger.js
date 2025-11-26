@@ -25,6 +25,7 @@ export class Logger {
   constructor() {
     this.tagPattern = null;
     this._tagEvaluator = null;
+    this._lastDisplayedTag = null; // Track last displayed tag for grouping
   }
 
   setTagPattern(pattern) {
@@ -83,6 +84,11 @@ export class Logger {
     // Filter displayed tags to only show those that match the current pattern (if any)
     const displayLabel = this._getDisplayLabel(tags);
 
+    // Add newline for tag grouping if this tag is different from the last one
+    if (this._lastDisplayedTag !== null && this._lastDisplayedTag !== displayLabel) {
+      fn(""); // Print empty line to create visual separation
+    }
+
     const callerInfo = includeSource ? this._getCallerInfo(sourceDepth) : null;
 
     // Apply ANSI colors if specified
@@ -126,6 +132,9 @@ export class Logger {
       }
       fn(...args);
     }
+
+    // Update last displayed tag for grouping
+    this._lastDisplayedTag = displayLabel;
   }
 
   _shouldLog(tags) {

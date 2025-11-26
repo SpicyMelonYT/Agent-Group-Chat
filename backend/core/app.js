@@ -12,8 +12,6 @@ export class App {
     this.mainWindow = null;
     /** @type {Object[]} */
     this.preloadAPIs = [];
-    /** @type {Logger} */
-    this.logger = new Logger();
   }
 
   /**
@@ -60,7 +58,7 @@ export class App {
    * Collect preload APIs from all initialized managers.
    */
   collectPreloadAPIs() {
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|core|preload|api",
         color1: "cyan",
@@ -72,7 +70,7 @@ export class App {
 
     for (const manager of this.managers) {
       try {
-        this.logger.log(
+        global.logger.log(
           {
             tags: "app|core|manager|preload",
             color1: "blue",
@@ -89,7 +87,7 @@ export class App {
           ) {
             // Add manager API config to the array
             this.preloadAPIs.push(managerAPIConfig);
-            this.logger.log(
+            global.logger.log(
               {
                 tags: "app|core|preload|api|success",
                 color1: "green",
@@ -99,7 +97,7 @@ export class App {
               } with api: ${Object.keys(managerAPIConfig.api).join(", ")}`
             );
           } else {
-            this.logger.warn(
+            global.logger.warn(
               {
                 tags: "app|core|preload|api|warning",
                 color1: "yellow",
@@ -109,7 +107,7 @@ export class App {
             );
           }
         } else {
-          this.logger.warn(
+          global.logger.warn(
             {
               tags: "app|core|preload|api|warning",
               color1: "yellow",
@@ -119,7 +117,7 @@ export class App {
           );
         }
       } catch (error) {
-        this.logger.error(
+        global.logger.error(
           {
             tags: "app|core|preload|api|error",
             color1: "red",
@@ -132,7 +130,7 @@ export class App {
       }
     }
 
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|core|preload|api|complete",
         color1: "green",

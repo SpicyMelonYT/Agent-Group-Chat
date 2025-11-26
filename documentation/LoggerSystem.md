@@ -24,6 +24,7 @@ While JavaScript provides `console.log()`, `console.error()`, etc., this custom 
 - **Source location tracking** for precise debugging
 - **Pattern matching** that works across the entire application
 - **Browser dev tools integration** with additional filtering capabilities
+- **Tag grouping** with automatic newlines between different tag groups for better readability
 
 ### Development Workflow
 ```javascript
@@ -86,8 +87,9 @@ This naming strategy allows patterns like:
 #### Backend Implementation (Node.js)
 - **Location**: `backend/core/logger.js`
 - **Color Support**: ANSI color codes for terminal output
-- **Features**: Full tag-based filtering, source location tracking, color customization
-- **Usage**: `import { Logger } from "./core/logger.js"`
+- **Features**: Full tag-based filtering, source location tracking, color customization, automatic tag grouping
+- **Usage**: Global `global.logger` instance available throughout backend
+- **Initialization**: Created at startup in `backend/main.js` for immediate availability
 
 #### Frontend Implementation (Browser)
 - **Location**: `frontend/core/logger.js`
@@ -204,6 +206,32 @@ _buildEvaluator(node) {
 ```
 
 ## Message Formatting and Output
+
+### Tag Grouping and Visual Separation
+
+#### Automatic Tag Clustering
+The logger automatically groups related messages by inserting blank lines between different tag combinations:
+
+```javascript
+logger.log({ tags: "app|init" }, "Starting application...");
+logger.log({ tags: "app|init" }, "Loading configuration...");
+logger.log({ tags: "store|data" }, "Connecting to database...");
+logger.log({ tags: "store|data" }, "Loading user data...");
+
+// Output:
+// [app|init] Starting application...
+// [app|init] Loading configuration...
+//
+// [store|data] Connecting to database...
+// [store|data] Loading user data...
+```
+
+#### Grouping Logic
+- **Same Tag**: Messages with identical tags are grouped together without separation
+- **Different Tags**: A blank line is inserted when the tag changes
+- **Filtering**: Grouping respects tag pattern filtering (only filtered messages are grouped)
+- **Global State**: Backend uses a single global logger instance, so grouping works across all components
+- **Cross-Component**: Tag changes between different managers/classes are properly separated
 
 ### Colored Console Output
 

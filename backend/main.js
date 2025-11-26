@@ -1,9 +1,12 @@
+// Initialize global logger immediately
+import { Logger } from "./core/logger.js";
+global.logger = new Logger();
+
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { MainApp } from "./app.js";
-import { Logger } from "./core/logger.js";
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -15,12 +18,6 @@ let mainWindow;
 
 // Create the main application instance
 const mainApp = new MainApp();
-
-// Create logger instance for main process
-const logger = new Logger();
-
-// Make logger globally available for backend code
-global.logger = logger;
 
 /**
  * Register IPC handlers based on manager preload APIs
@@ -101,7 +98,7 @@ if (process.argv.includes("--dev")) {
       hardResetMethod: "exit",
       forceHardReset: false,
     });
-    logger.log(
+    global.logger.log(
       {
         tags: "main|dev|hot-reload",
         color1: "cyan",
@@ -109,7 +106,7 @@ if (process.argv.includes("--dev")) {
       "Frontend hot reloading enabled for development"
     );
   } catch (error) {
-    logger.warn(
+    global.logger.warn(
       {
         tags: "main|dev|hot-reload|error",
         color1: "yellow",
@@ -133,7 +130,7 @@ app.whenReady().then(async () => {
     try {
       event.returnValue = mainApp.preloadAPIs || [];
     } catch (error) {
-      logger.error(
+      global.logger.error(
         {
           tags: "main|ipc|preload|error",
           color1: "red",
@@ -161,7 +158,7 @@ app.whenReady().then(async () => {
   if (windowManager) {
     windowManager.setupWindowListeners();
   } else {
-    logger.error(
+    global.logger.error(
       {
         tags: "main|window|manager|error",
         color1: "red",

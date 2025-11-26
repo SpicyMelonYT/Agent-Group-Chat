@@ -1,3 +1,4 @@
+// Test comment for tag grouping
 import { Manager, Logger } from "../core/index.js";
 import fs from "fs";
 import path from "path";
@@ -12,12 +13,11 @@ export class StoreManager extends Manager {
   constructor() {
     super();
     this.fileWatchers = new Map(); // Map<filePath, watcherId>
-    this.logger = new Logger();
   }
 
   async init() {
     try {
-      this.logger.log(
+      global.logger.log(
         {
           tags: "store|manager|init",
           color1: "blue",
@@ -28,7 +28,7 @@ export class StoreManager extends Manager {
 
       // Initialize store path using Electron's userData folder
       this.basePath = path.join(app.getPath("userData"), "App");
-      this.logger.log(
+      global.logger.log(
         {
           tags: "store|manager|init",
           color1: "cyan",
@@ -39,7 +39,7 @@ export class StoreManager extends Manager {
 
       // Ensure the data directory exists
       await this.ensureDirectoryExists(this.basePath);
-      this.logger.log(
+      global.logger.log(
         {
           tags: "store|manager|init",
           color1: "green",
@@ -47,7 +47,7 @@ export class StoreManager extends Manager {
         "Data directory ensured, initialization complete"
       );
     } catch (error) {
-      this.logger.error(
+      global.logger.error(
         {
           tags: "store|manager|error",
           color1: "red",
@@ -380,7 +380,7 @@ export class StoreManager extends Manager {
           timestamp: new Date(),
         });
       } catch (error) {
-        this.logger.error(
+        global.logger.error(
           {
             tags: "store|watcher|error",
             color1: "red",

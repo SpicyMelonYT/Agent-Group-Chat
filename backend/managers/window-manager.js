@@ -8,7 +8,6 @@ export class WindowManager extends Manager {
     this.config = null;
     this.isInitialized = false;
     this.isApplyingState = false; // Flag to prevent event listeners during state application
-    this.logger = new Logger();
   }
 
   async init() {
@@ -35,7 +34,7 @@ export class WindowManager extends Manager {
 
       this.isInitialized = true;
     } catch (error) {
-      this.logger.error(
+      global.logger.error(
         {
           tags: "window|manager|error",
           color1: "red",
@@ -79,7 +78,7 @@ export class WindowManager extends Manager {
    */
   setupWindowListeners() {
     if (!this.app || !this.app.mainWindow) {
-      this.logger.warn(
+      global.logger.warn(
         {
           tags: "window|manager|warning",
           color1: "yellow",
@@ -190,7 +189,7 @@ export class WindowManager extends Manager {
     try {
       await this.storeManager.writeJSON(this.configFile, this.config);
     } catch (error) {
-      this.logger.error(
+      global.logger.error(
         {
           tags: "window|config|error",
           color1: "red",
@@ -275,7 +274,7 @@ export class WindowManager extends Manager {
       }
     } catch (error) {
       this.isApplyingState = false;
-      this.logger.error(
+      global.logger.error(
         {
           tags: "window|state|error",
           color1: "red",

@@ -11,13 +11,12 @@ export class SectionManager extends Manager {
     super();
     this.currentSection = "main";
     this.sectionsPath = path.join(__dirname, "../../frontend/sections");
-    this.logger = new Logger();
   }
 
   async init() {
     // Note: mainWindow may not be available yet during initialization
     // We'll check for it when actually switching sections
-    this.logger.log(
+    global.logger.log(
       {
         tags: "section|manager|init",
         color1: "green",
@@ -34,7 +33,7 @@ export class SectionManager extends Manager {
    */
   async switchToSection(sectionName) {
     try {
-      this.logger.log(
+      global.logger.log(
         {
           tags: "section|manager|switch",
           color1: "blue",
@@ -65,7 +64,7 @@ export class SectionManager extends Manager {
       await this.app.mainWindow.loadFile(htmlFile);
 
       this.currentSection = sectionName;
-      this.logger.log(
+      global.logger.log(
         {
           tags: "section|manager|switch|success",
           color1: "green",
@@ -75,7 +74,7 @@ export class SectionManager extends Manager {
 
       return true;
     } catch (error) {
-      this.logger.error(
+      global.logger.error(
         {
           tags: "section|manager|switch|error",
           color1: "red",
@@ -127,7 +126,7 @@ export class SectionManager extends Manager {
 
       return sections;
     } catch (error) {
-      this.logger.error(
+      global.logger.error(
         {
           tags: "section|manager|list|error",
           color1: "red",

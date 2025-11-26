@@ -1,3 +1,4 @@
+// Test comment for tag grouping
 import { App, Logger } from "./core/index.js";
 import { StoreManager } from "./managers/store-manager.js";
 import { WindowManager } from "./managers/window-manager.js";
@@ -9,9 +10,6 @@ import { SectionManager } from "./managers/section-manager.js";
 export class MainApp extends App {
   constructor() {
     super();
-    this.logger = new Logger();
-    // Make logger globally available for backend code
-    global.logger = this.logger;
   }
 
   /**
@@ -19,7 +17,7 @@ export class MainApp extends App {
    * @returns {Promise<void>}
    */
   async init() {
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|init",
         color1: "cyan",
@@ -29,7 +27,7 @@ export class MainApp extends App {
     );
 
     // Add managers to the application (order matters - dependencies first)
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|manager",
         color1: "blue",
@@ -38,7 +36,7 @@ export class MainApp extends App {
     );
     this.addManager(new StoreManager());
 
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|manager",
         color1: "blue",
@@ -47,7 +45,7 @@ export class MainApp extends App {
     );
     this.addManager(new WindowManager());
 
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|manager",
         color1: "blue",
@@ -57,7 +55,7 @@ export class MainApp extends App {
     this.addManager(new SectionManager());
 
     // Initialize all managers
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|manager|init",
         color1: "yellow",
@@ -66,7 +64,7 @@ export class MainApp extends App {
     );
     await this.initManagers();
 
-    this.logger.log(
+    global.logger.log(
       {
         tags: "app|main|init|success",
         color1: "green",
