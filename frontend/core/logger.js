@@ -49,26 +49,38 @@ export class Logger {
       return;
     }
 
+    const callerInfo = this._getCallerInfo();
+
     // Apply colors if specified
     if (colors.color1 && colors.color2) {
-      const tagPart = `%c[${label}]%c`;
-      const messagePart = messages.map(msg => `%c${msg}%c`).join(' ');
-
+      let formatString = `%c[${label}]%c`;
       const styles = [
         `color: ${colors.color1}`, // Tag opening bracket and label
         `color: ${colors.color2}`, // Reset for space after tag
       ];
 
       // Add styles for each message part
-      messages.forEach(() => {
+      messages.forEach((msg) => {
+        formatString += ` %c${msg}%c`;
         styles.push(`color: ${colors.color2}`); // Message color
         styles.push(''); // Reset
       });
 
-      fn(tagPart + ' ' + messagePart, ...styles);
+      // Add source info in grey if present
+      if (callerInfo) {
+        formatString += ` %c${callerInfo}%c`;
+        styles.push('color: grey'); // Source color
+        styles.push(''); // Reset
+      }
+
+      fn(formatString, ...styles);
     } else {
       // No colors specified, use default
-      fn(`[${label}]`, ...messages);
+      const args = [`[${label}]`, ...messages];
+      if (callerInfo) {
+        args.push(callerInfo);
+      }
+      fn(...args);
     }
   }
 
@@ -268,5 +280,54 @@ export class Logger {
       default:
         throw new Error(`Unsupported pattern node "${node.type}"`);
     }
+  }
+
+  // Attempts to capture the original callsite so devtools still hints at the source file.
+  _getCallerInfo() {
+    const error = new Error();
+    if (typeof Error.captureStackTrace === "function") {
+      Error.captureStackTrace(error, this._emit);
+    }
+
+    const rawStack = typeof error.stack === "string" ? error.stack : "";
+    if (!rawStack) {
+      return null;
+    }
+
+    const lines = rawStack
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && line !== "Error");
+
+    if (!lines.length) {
+      return null;
+    }
+
+    const firstExternal = lines.find(
+      (line) => !line.includes("Logger._emit") && !line.includes("logger.js")
+    );
+
+    const callerLine = (firstExternal || lines[0]).replace(/^at\s+/, "");
+
+    const pathSegment = callerLine.includes("(")
+      ? callerLine.slice(callerLine.indexOf("(") + 1, callerLine.lastIndexOf(")"))
+      : callerLine;
+
+    const match = pathSegment.match(/^(.*):(\d+)(?::(\d+))?$/);
+    if (!match) {
+      return `(source: ${pathSegment})`;
+    }
+
+    const [, filePath, line, column] = match;
+
+    // Extract relative path from project root (agent-group-chat folder)
+    let relativePath = filePath;
+    const projectRootIndex = filePath.indexOf('agent-group-chat');
+    if (projectRootIndex !== -1) {
+      relativePath = filePath.substring(projectRootIndex + 'agent-group-chat'.length + 1); // +1 for the separator
+    }
+
+    const location = [line, column].filter(Boolean).join(":");
+    return `(source: ${relativePath}${location ? `:${location}` : ""})`;
   }
 }
