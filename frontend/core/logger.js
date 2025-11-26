@@ -44,20 +44,28 @@ export class Logger {
       console.warn('[Logger] Settings parameter should be an object. Received:', typeof settings, settings);
     }
 
-    const { tags, label, colors } = this._normalizeTags(settings);
+    const { tags, label, colors, includeSource, sourceDepth, sourcePosition } = this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;
     }
 
-    const callerInfo = this._getCallerInfo();
+    const callerInfo = includeSource ? this._getCallerInfo(sourceDepth) : null;
 
     // Apply colors if specified
     if (colors.color1 && colors.color2) {
-      let formatString = `%c[${label}]%c`;
-      const styles = [
-        `color: ${colors.color1}`, // Tag opening bracket and label
-        `color: ${colors.color2}`, // Reset for space after tag
-      ];
+      let formatString = ``;
+      const styles = [];
+
+      // Add source info at start if requested (before tag)
+      if (callerInfo && sourcePosition === "start") {
+        formatString += `%c${callerInfo}%c `;
+        styles.push('color: grey'); // Source color
+        styles.push(''); // Reset
+      }
+
+      formatString += `%c[${label}]%c`;
+      styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
+      styles.push(`color: ${colors.color2}`); // Reset for space after tag
 
       // Add styles for each message part
       messages.forEach((msg) => {
@@ -66,8 +74,8 @@ export class Logger {
         styles.push(''); // Reset
       });
 
-      // Add source info in grey if present
-      if (callerInfo) {
+      // Add source info at end (default) if present
+      if (callerInfo && sourcePosition === "end") {
         formatString += ` %c${callerInfo}%c`;
         styles.push('color: grey'); // Source color
         styles.push(''); // Reset
@@ -76,8 +84,14 @@ export class Logger {
       fn(formatString, ...styles);
     } else {
       // No colors specified, use default
-      const args = [`[${label}]`, ...messages];
-      if (callerInfo) {
+      const args = [];
+      if (callerInfo && sourcePosition === "start") {
+        args.push(callerInfo, `[${label}]`);
+      } else {
+        args.push(`[${label}]`);
+      }
+      args.push(...messages);
+      if (callerInfo && sourcePosition === "end") {
         args.push(callerInfo);
       }
       fn(...args);
@@ -96,6 +110,9 @@ export class Logger {
     let tags = new Set();
     let label = "untagged";
     let colors = { color1: "white", color2: "white" };
+    let includeSource = false;
+    let sourceDepth = 0;
+    let sourcePosition = "end";
 
     // Handle object input with tag and color properties
     if (tagInput && typeof tagInput === 'object' && !Array.isArray(tagInput) && !(tagInput instanceof Set)) {
@@ -124,6 +141,22 @@ export class Logger {
         colors.color2 = tagInput.color2;
       }
 
+      // Extract source inclusion setting
+      if (tagInput.includeSource !== undefined) {
+        includeSource = Boolean(tagInput.includeSource);
+      }
+
+      // Extract source depth setting
+      if (tagInput.sourceDepth !== undefined) {
+        sourceDepth = Math.max(0, parseInt(tagInput.sourceDepth, 10) || 0);
+      }
+
+      // Extract source position setting
+      if (tagInput.sourcePosition !== undefined) {
+        const pos = String(tagInput.sourcePosition).toLowerCase().trim();
+        sourcePosition = pos === "start" ? "start" : "end";
+      }
+
       label = tags.size > 0 ? Array.from(tags).join("|") : "untagged";
     }
     // Handle legacy Set input
@@ -147,7 +180,7 @@ export class Logger {
       label = tagArray.length > 0 ? tagArray.join("|") : String(tagInput ?? "").trim() || "untagged";
     }
 
-    return { tags, label, colors };
+    return { tags, label, colors, includeSource, sourceDepth, sourcePosition };
   }
 
   _compilePattern(pattern) {
@@ -283,7 +316,7 @@ export class Logger {
   }
 
   // Attempts to capture the original callsite so devtools still hints at the source file.
-  _getCallerInfo() {
+  _getCallerInfo(depth = 0) {
     const error = new Error();
     if (typeof Error.captureStackTrace === "function") {
       Error.captureStackTrace(error, this._emit);
@@ -303,11 +336,14 @@ export class Logger {
       return null;
     }
 
-    const firstExternal = lines.find(
+    // Find all external lines (not from Logger)
+    const externalLines = lines.filter(
       (line) => !line.includes("Logger._emit") && !line.includes("logger.js")
     );
 
-    const callerLine = (firstExternal || lines[0]).replace(/^at\s+/, "");
+    // Select the line at the specified depth, or fall back to first external or first line
+    const targetLine = externalLines[depth] || externalLines[0] || lines[0];
+    const callerLine = targetLine.replace(/^at\s+/, "");
 
     const pathSegment = callerLine.includes("(")
       ? callerLine.slice(callerLine.indexOf("(") + 1, callerLine.lastIndexOf(")"))

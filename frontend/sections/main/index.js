@@ -1,8 +1,11 @@
 import { Section } from "../../core/section.js";
+import { MainManager } from "./managers/main-manager.js";
 
 export class MainSection extends Section {
   constructor() {
     super();
+
+    this.mainManager = this.addManager(new MainManager());
   }
 }
 
