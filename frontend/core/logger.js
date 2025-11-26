@@ -39,6 +39,11 @@ export class Logger {
   }
 
   _emit(fn, settings, messages) {
+    // Ensure settings is processed as an object
+    if (settings === null || settings === undefined || typeof settings !== 'object' || Array.isArray(settings)) {
+      console.warn('[Logger] Settings parameter should be an object. Received:', typeof settings, settings);
+    }
+
     const { tags, label, colors } = this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;

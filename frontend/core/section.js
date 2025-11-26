@@ -2,8 +2,15 @@ import { Logger } from "./logger.js";
 
 export class Section {
   constructor() {
-    this.logger = new Logger();
     this.managers = [];
+    this.logger = new Logger();
+    window.logger = this.logger;
+    window.section = this;
+
+    this.logger.log(
+      { tags: "section", color1: "lime" },
+      `Section created: ${this.constructor.name}`
+    );
   }
 
   addManager(manager) {
