@@ -32,6 +32,15 @@ export class MainApp extends App {
         tags: "app|main|manager",
         color1: "blue",
       },
+      "Adding All Managers..."
+    );
+
+    global.logger.log(
+      {
+        tags: "app|main|manager",
+        color1: "blue",
+        showTag: false,
+      },
       "Adding StoreManager"
     );
     this.addManager(new StoreManager());
@@ -40,6 +49,7 @@ export class MainApp extends App {
       {
         tags: "app|main|manager",
         color1: "blue",
+        showTag: false,
       },
       "Adding WindowManager"
     );
@@ -49,6 +59,7 @@ export class MainApp extends App {
       {
         tags: "app|main|manager",
         color1: "blue",
+        showTag: false,
       },
       "Adding SectionManager"
     );

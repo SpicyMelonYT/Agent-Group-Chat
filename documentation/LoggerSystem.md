@@ -135,7 +135,8 @@ logger.log({
   color2: "blue",                // Message color
   includeSource: true,           // Include file/line info
   sourceDepth: 1,                // Stack trace depth
-  sourcePosition: "end"          // Source info position
+  sourcePosition: "end",         // Source info position
+  showTag: true                  // Whether to display [tag] brackets (default: true)
 }, "Message content");
 ```
 
@@ -232,6 +233,36 @@ logger.log({ tags: "store|data" }, "Loading user data...");
 - **Filtering**: Grouping respects tag pattern filtering (only filtered messages are grouped)
 - **Global State**: Backend uses a single global logger instance, so grouping works across all components
 - **Cross-Component**: Tag changes between different managers/classes are properly separated
+
+#### Tag Visibility Control
+The `showTag` option allows hiding tag brackets for cleaner hierarchical output while maintaining grouping logic:
+
+```javascript
+// Header message with visible tags
+logger.log({
+  tags: "app|init",
+  color1: "blue",
+  showTag: true  // Shows [app|init] with brackets
+}, "Initializing managers...");
+
+// Detail messages without tag brackets (visually grouped with bullet points)
+logger.log({
+  tags: "app|init",
+  showTag: false  // Shows ○ instead of [app|init]
+}, "Adding StoreManager");
+
+logger.log({
+  tags: "app|init",
+  showTag: false  // Shows ○ instead of [app|init]
+}, "Adding WindowManager");
+
+// Output:
+// [app|init] Initializing managers...
+//  * Adding StoreManager
+//  * Adding WindowManager
+//
+// [different|tag] Next section starts with visual separation
+```
 
 ### Colored Console Output
 

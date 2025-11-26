@@ -75,7 +75,7 @@ export class Logger {
       );
     }
 
-    const { tags, colors, includeSource, sourceDepth, sourcePosition } =
+    const { tags, colors, includeSource, sourceDepth, sourcePosition, showTag } =
       this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;
@@ -84,8 +84,8 @@ export class Logger {
     // Filter displayed tags to only show those that match the current pattern (if any)
     const displayLabel = this._getDisplayLabel(tags);
 
-    // Add newline for tag grouping if this tag is different from the last one
-    if (this._lastDisplayedTag !== null && this._lastDisplayedTag !== displayLabel) {
+    // Add newline for tag grouping if this tag is different from the last one AND we're showing tags
+    if (showTag && this._lastDisplayedTag !== null && this._lastDisplayedTag !== displayLabel) {
       fn(""); // Print empty line to create visual separation
     }
 
@@ -100,16 +100,23 @@ export class Logger {
         output += `${ANSI_COLORS.gray}${callerInfo}${ANSI_COLORS.reset} `;
       }
 
-      // Apply color1 to tags if specified, otherwise use default
-      const tagColor = colors.color1 ? this._getAnsiColor(colors.color1) : "";
-      const tagReset = colors.color1 ? ANSI_COLORS.reset : "";
-      output += `${tagColor}[${displayLabel}]${tagReset}`;
+      // Apply color1 to tags if specified and showTag is true, otherwise use default
+      if (showTag) {
+        const tagColor = colors.color1 ? this._getAnsiColor(colors.color1) : "";
+        const tagReset = colors.color1 ? ANSI_COLORS.reset : "";
+        output += `${tagColor}[${displayLabel}]${tagReset}`;
+      }
 
       // Add messages with color2 if specified, otherwise use default
       messages.forEach((msg) => {
-        const msgColor = colors.color2 ? this._getAnsiColor(colors.color2) : "";
-        const msgReset = colors.color2 ? ANSI_COLORS.reset : "";
-        output += ` ${msgColor}${msg}${msgReset}`;
+        if (showTag) {
+          const msgColor = colors.color2 ? this._getAnsiColor(colors.color2) : "";
+          const msgReset = colors.color2 ? ANSI_COLORS.reset : "";
+          output += ` ${msgColor}${msg}${msgReset}`;
+        } else {
+          // When not showing tags, use plain text with bullet (no ANSI colors)
+          output += ` * ${msg}`;
+        }
       });
 
       // Add source info at end (default) if present
@@ -122,11 +129,29 @@ export class Logger {
       // No colors specified, use default
       const args = [];
       if (callerInfo && sourcePosition === "start") {
-        args.push(callerInfo, `[${displayLabel}]`);
+        args.push(callerInfo);
+        if (showTag) {
+          args.push(`[${displayLabel}]`);
+        }
       } else {
-        args.push(`[${displayLabel}]`);
+        if (showTag) {
+          args.push(`[${displayLabel}]`);
+        }
       }
-      args.push(...messages);
+
+      // Add messages with appropriate separator
+      if (showTag) {
+        args.push(...messages);
+      } else {
+        // When not showing tags, use plain emoji prefix (no ANSI processing)
+        if (messages.length > 0) {
+          args.push(`* ${messages[0]}`);
+          // Add remaining messages as separate args
+          for (let i = 1; i < messages.length; i++) {
+            args.push(messages[i]);
+          }
+        }
+      }
       if (callerInfo && sourcePosition === "end") {
         args.push(callerInfo);
       }
@@ -174,6 +199,7 @@ export class Logger {
     let includeSource = false;
     let sourceDepth = 0;
     let sourcePosition = "end";
+    let showTag = true; // Default to showing tags
 
     // Handle object input with tag and color properties
     if (
@@ -228,6 +254,11 @@ export class Logger {
         const pos = String(tagInput.sourcePosition).toLowerCase().trim();
         sourcePosition = pos === "start" ? "start" : "end";
       }
+
+      // Extract show tag setting
+      if (tagInput.showTag !== undefined) {
+        showTag = Boolean(tagInput.showTag);
+      }
     }
     // Handle legacy Set input
     else if (tagInput instanceof Set) {
@@ -246,7 +277,7 @@ export class Logger {
       tags = new Set(tagArray);
     }
 
-    return { tags, colors, includeSource, sourceDepth, sourcePosition };
+    return { tags, colors, includeSource, sourceDepth, sourcePosition, showTag };
   }
 
   _compilePattern(pattern) {
