@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { MainApp } from "./app.js";
+import { Logger } from "./core/logging.js";
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +15,12 @@ let mainWindow;
 
 // Create the main application instance
 const mainApp = new MainApp();
+
+// Create logger instance for main process
+const logger = new Logger();
+
+// Make logger globally available for backend code
+global.logger = logger;
 
 /**
  * Register IPC handlers based on manager preload APIs
@@ -91,9 +98,16 @@ if (process.argv.includes("--dev")) {
       hardResetMethod: "exit",
       forceHardReset: false,
     });
-    console.log("🔄 Frontend hot reloading enabled for development");
+    logger.log({
+      tags: "main|dev|hot-reload",
+      color: "cyan"
+    }, "Frontend hot reloading enabled for development");
   } catch (error) {
-    console.warn(`Hot reloading not available: ${error?.message || error}`);
+    logger.warn({
+      tags: "main|dev|hot-reload|error",
+      color1: "yellow",
+      color2: "orange"
+    }, `Hot reloading not available: ${error?.message || error}`);
   }
 }
 
@@ -110,7 +124,11 @@ app.whenReady().then(async () => {
     try {
       event.returnValue = mainApp.preloadAPIs || [];
     } catch (error) {
-      console.error('Failed to send manager API configs:', error);
+      logger.error({
+        tags: "main|ipc|preload|error",
+        color1: "red",
+        color2: "orange"
+      }, "Failed to send manager API configs:", error);
       event.returnValue = [];
     }
   });
@@ -128,7 +146,12 @@ app.whenReady().then(async () => {
   if (windowManager) {
     windowManager.setupWindowListeners();
   } else {
-    console.error('WindowManager not found!');
+    logger.error({
+      tags: "main|window|manager|error",
+      color1: "red",
+      color2: "orange",
+      includeSource: true
+    }, "WindowManager not found!");
   }
 
   app.on("activate", () => {

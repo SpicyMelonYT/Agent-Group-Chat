@@ -1,4 +1,4 @@
-import { Manager } from "../core/index.js";
+import { Manager, Logger } from "../core/index.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -11,12 +11,17 @@ export class SectionManager extends Manager {
     super();
     this.currentSection = 'main';
     this.sectionsPath = path.join(__dirname, '../../frontend/sections');
+    this.logger = new Logger();
   }
 
   async init() {
     // Note: mainWindow may not be available yet during initialization
     // We'll check for it when actually switching sections
-    console.log('SectionManager initialized');
+    this.logger.log({
+      tags: "section|manager|init",
+      color: "green",
+      includeSource: true
+    }, "SectionManager initialized");
   }
 
   /**
@@ -26,7 +31,11 @@ export class SectionManager extends Manager {
    */
   async switchToSection(sectionName) {
     try {
-      console.log(`SectionManager: Switching to section '${sectionName}'`);
+      this.logger.log({
+        tags: "section|manager|switch",
+        color: "blue",
+        includeSource: true
+      }, `Switching to section '${sectionName}'`);
 
       // Check if main window is available
       if (!this.app || !this.app.mainWindow) {
@@ -50,11 +59,19 @@ export class SectionManager extends Manager {
       await this.app.mainWindow.loadFile(htmlFile);
 
       this.currentSection = sectionName;
-      console.log(`SectionManager: Successfully switched to section '${sectionName}'`);
+      this.logger.log({
+        tags: "section|manager|switch|success",
+        color: "green"
+      }, `Successfully switched to section '${sectionName}'`);
 
       return true;
     } catch (error) {
-      console.error(`SectionManager: Failed to switch to section '${sectionName}':`, error);
+      this.logger.error({
+        tags: "section|manager|switch|error",
+        color1: "red",
+        color2: "orange",
+        includeSource: true
+      }, `Failed to switch to section '${sectionName}':`, error);
       return false;
     }
   }
@@ -91,7 +108,11 @@ export class SectionManager extends Manager {
 
       return sections;
     } catch (error) {
-      console.error('SectionManager: Failed to list sections:', error);
+      this.logger.error({
+        tags: "section|manager|list|error",
+        color1: "red",
+        color2: "orange"
+      }, "Failed to list sections:", error);
       return [];
     }
   }

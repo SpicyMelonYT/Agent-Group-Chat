@@ -1,4 +1,5 @@
 import { Manager } from "./manager.js";
+import { Logger } from "./logging.js";
 
 /**
  * Base application class that manages managers.
@@ -11,6 +12,8 @@ export class App {
     this.mainWindow = null;
     /** @type {Object[]} */
     this.preloadAPIs = [];
+    /** @type {Logger} */
+    this.logger = new Logger();
   }
 
   /**
@@ -57,12 +60,19 @@ export class App {
    * Collect preload APIs from all initialized managers.
    */
   collectPreloadAPIs() {
-    console.log('App: Collecting preload APIs...');
+    this.logger.log({
+      tags: "app|core|preload|api",
+      color: "cyan",
+      includeSource: true
+    }, "Collecting preload APIs");
     this.preloadAPIs = [];
 
     for (const manager of this.managers) {
       try {
-        console.log(`App: Processing manager ${manager.constructor.name}...`);
+        this.logger.log({
+          tags: "app|core|manager|preload",
+          color: "blue"
+        }, `Processing manager ${manager.constructor.name}`);
         if (typeof manager.initPreload === 'function') {
           const managerAPIConfig = manager.initPreload();
           if (
@@ -73,26 +83,40 @@ export class App {
           ) {
             // Add manager API config to the array
             this.preloadAPIs.push(managerAPIConfig);
-            console.log(
-              `App: Collected preload API config from ${manager.constructor.name}: ${
-                managerAPIConfig.name
-              } with api: ${Object.keys(managerAPIConfig.api).join(', ')}`
-            );
+            this.logger.log({
+              tags: "app|core|preload|api|success",
+              color: "green"
+            }, `Collected preload API config from ${manager.constructor.name}: ${
+              managerAPIConfig.name
+            } with api: ${Object.keys(managerAPIConfig.api).join(', ')}`);
           } else {
-            console.warn(`App: Invalid preload API config from ${manager.constructor.name}`);
+            this.logger.warn({
+              tags: "app|core|preload|api|warning",
+              color1: "yellow",
+              color2: "orange"
+            }, `Invalid preload API config from ${manager.constructor.name}`);
           }
         } else {
-          console.warn(`App: Manager ${manager.constructor.name} has no initPreload method`);
+          this.logger.warn({
+            tags: "app|core|preload|api|warning",
+            color1: "yellow",
+            color2: "orange"
+          }, `Manager ${manager.constructor.name} has no initPreload method`);
         }
       } catch (error) {
-        console.error(
-          `App: Failed to collect preload APIs from ${manager.constructor.name}:`,
-          error
-        );
+        this.logger.error({
+          tags: "app|core|preload|api|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true
+        }, `Failed to collect preload APIs from ${manager.constructor.name}:`, error);
       }
     }
 
-    console.log(`App: Collected ${this.preloadAPIs.length} preload API configs`);
+    this.logger.log({
+      tags: "app|core|preload|api|complete",
+      color: "green"
+    }, `Collected ${this.preloadAPIs.length} preload API configs`);
   }
 
   /**

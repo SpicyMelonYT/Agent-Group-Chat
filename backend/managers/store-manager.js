@@ -1,4 +1,4 @@
-import { Manager } from "../core/index.js";
+import { Manager, Logger } from "../core/index.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,21 +12,37 @@ export class StoreManager extends Manager {
   constructor() {
     super();
     this.fileWatchers = new Map(); // Map<filePath, watcherId>
+    this.logger = new Logger();
   }
 
   async init() {
     try {
-      console.log('StoreManager: Starting initialization...');
+      this.logger.log({
+        tags: "store|manager|init",
+        color: "blue",
+        includeSource: true
+      }, "StoreManager starting initialization");
 
       // Initialize store path using Electron's userData folder
       this.basePath = path.join(app.getPath("userData"), "App");
-      console.log('StoreManager: Base path set to:', this.basePath);
+      this.logger.log({
+        tags: "store|manager|init",
+        color: "cyan"
+      }, "Base path set to:", this.basePath);
 
       // Ensure the data directory exists
       await this.ensureDirectoryExists(this.basePath);
-      console.log('StoreManager: Data directory ensured, initialization complete');
+      this.logger.log({
+        tags: "store|manager|init",
+        color: "green"
+      }, "Data directory ensured, initialization complete");
     } catch (error) {
-      console.error('StoreManager: Failed to initialize:', error);
+      this.logger.error({
+        tags: "store|manager|error",
+        color1: "red",
+        color2: "orange",
+        includeSource: true
+      }, "Failed to initialize StoreManager:", error);
       throw error;
     }
   }
@@ -342,7 +358,11 @@ export class StoreManager extends Manager {
           timestamp: new Date()
         });
       } catch (error) {
-        console.error(`Error notifying file watcher for ${filePath}:`, error);
+        this.logger.error({
+          tags: "store|watcher|error",
+          color1: "red",
+          color2: "orange"
+        }, `Error notifying file watcher for ${filePath}:`, error);
       }
     }
   }

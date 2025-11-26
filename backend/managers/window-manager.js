@@ -1,4 +1,4 @@
-import { Manager } from "../core/index.js";
+import { Manager, Logger } from "../core/index.js";
 import { app, screen } from "electron";
 
 export class WindowManager extends Manager {
@@ -8,6 +8,7 @@ export class WindowManager extends Manager {
     this.config = null;
     this.isInitialized = false;
     this.isApplyingState = false; // Flag to prevent event listeners during state application
+    this.logger = new Logger();
   }
 
   async init() {
@@ -30,7 +31,12 @@ export class WindowManager extends Manager {
 
       this.isInitialized = true;
     } catch (error) {
-      console.error('WindowManager initialization failed:', error);
+      this.logger.error({
+        tags: "window|manager|error",
+        color1: "red",
+        color2: "orange",
+        includeSource: true
+      }, "WindowManager initialization failed:", error);
       throw error;
     }
   }
@@ -65,7 +71,11 @@ export class WindowManager extends Manager {
    */
   setupWindowListeners() {
     if (!this.app || !this.app.mainWindow) {
-      console.warn('No main window available for event listeners');
+      this.logger.warn({
+        tags: "window|manager|warning",
+        color1: "yellow",
+        color2: "orange"
+      }, "No main window available for event listeners");
       return;
     }
 
@@ -161,7 +171,11 @@ export class WindowManager extends Manager {
     try {
       await this.storeManager.writeJSON(this.configFile, this.config);
     } catch (error) {
-      console.error('Failed to save window config:', error);
+      this.logger.error({
+        tags: "window|config|error",
+        color1: "red",
+        color2: "orange"
+      }, "Failed to save window config:", error);
     }
   }
 
@@ -237,7 +251,12 @@ export class WindowManager extends Manager {
 
     } catch (error) {
       this.isApplyingState = false;
-      console.error('Failed to apply saved window state:', error);
+      this.logger.error({
+        tags: "window|state|error",
+        color1: "red",
+        color2: "orange",
+        includeSource: true
+      }, "Failed to apply saved window state:", error);
     }
   }
 
