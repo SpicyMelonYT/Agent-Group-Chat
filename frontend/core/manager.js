@@ -3,7 +3,7 @@ import { Section } from "./section.js";
 export class Manager {
   constructor() {
     /** @type {Section} */
-    this.app = null;
+    this.section = null;
   }
 
   async init() {

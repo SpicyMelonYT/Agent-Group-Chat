@@ -1,6 +1,7 @@
 import { App } from "./core/app.js";
 import { StoreManager } from "./managers/store-manager.js";
 import { WindowManager } from "./managers/window-manager.js";
+import { SectionManager } from "./managers/section-manager.js";
 
 /**
  * Main application class that extends the base App and adds specific managers.
@@ -23,6 +24,9 @@ export class MainApp extends App {
 
     console.log('MainApp: Adding WindowManager...');
     this.addManager(new WindowManager());
+
+    console.log('MainApp: Adding SectionManager...');
+    this.addManager(new SectionManager());
 
     // Initialize all managers
     console.log('MainApp: Initializing all managers...');
