@@ -19,7 +19,7 @@ export class SectionManager extends Manager {
     // We'll check for it when actually switching sections
     this.logger.log({
       tags: "section|manager|init",
-      color: "green",
+      color1: "green",
       includeSource: true
     }, "SectionManager initialized");
   }
@@ -33,7 +33,7 @@ export class SectionManager extends Manager {
     try {
       this.logger.log({
         tags: "section|manager|switch",
-        color: "blue",
+        color1: "blue",
         includeSource: true
       }, `Switching to section '${sectionName}'`);
 
@@ -61,7 +61,7 @@ export class SectionManager extends Manager {
       this.currentSection = sectionName;
       this.logger.log({
         tags: "section|manager|switch|success",
-        color: "green"
+        color1: "green"
       }, `Successfully switched to section '${sectionName}'`);
 
       return true;

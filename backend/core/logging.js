@@ -76,7 +76,7 @@ export class Logger {
     const callerInfo = includeSource ? this._getCallerInfo(sourceDepth) : null;
 
     // Apply ANSI colors if specified
-    if (colors.color1 && colors.color2) {
+    if (colors.color1 || colors.color2) {
       let output = '';
 
       // Add source info at start if requested (before tag)
@@ -84,11 +84,16 @@ export class Logger {
         output += `${ANSI_COLORS.gray}${callerInfo}${ANSI_COLORS.reset} `;
       }
 
-      output += `${this._getAnsiColor(colors.color1)}[${displayLabel}]${ANSI_COLORS.reset}`;
+      // Apply color1 to tags if specified, otherwise use default
+      const tagColor = colors.color1 ? this._getAnsiColor(colors.color1) : '';
+      const tagReset = colors.color1 ? ANSI_COLORS.reset : '';
+      output += `${tagColor}[${displayLabel}]${tagReset}`;
 
-      // Add messages with color
+      // Add messages with color2 if specified, otherwise use default
       messages.forEach((msg) => {
-        output += ` ${this._getAnsiColor(colors.color2)}${msg}${ANSI_COLORS.reset}`;
+        const msgColor = colors.color2 ? this._getAnsiColor(colors.color2) : '';
+        const msgReset = colors.color2 ? ANSI_COLORS.reset : '';
+        output += ` ${msgColor}${msg}${msgReset}`;
       });
 
       // Add source info at end (default) if present

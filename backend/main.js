@@ -99,7 +99,7 @@ if (process.argv.includes("--dev")) {
     });
     logger.log({
       tags: "main|dev|hot-reload",
-      color: "cyan"
+      color1: "cyan"
     }, "Frontend hot reloading enabled for development");
   } catch (error) {
     logger.warn({

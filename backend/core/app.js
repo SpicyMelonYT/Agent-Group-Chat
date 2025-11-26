@@ -62,7 +62,7 @@ export class App {
   collectPreloadAPIs() {
     this.logger.log({
       tags: "app|core|preload|api",
-      color: "cyan",
+      color1: "cyan",
       includeSource: true
     }, "Collecting preload APIs");
     this.preloadAPIs = [];
@@ -71,7 +71,7 @@ export class App {
       try {
         this.logger.log({
           tags: "app|core|manager|preload",
-          color: "blue"
+          color1: "blue"
         }, `Processing manager ${manager.constructor.name}`);
         if (typeof manager.initPreload === 'function') {
           const managerAPIConfig = manager.initPreload();
@@ -85,7 +85,7 @@ export class App {
             this.preloadAPIs.push(managerAPIConfig);
             this.logger.log({
               tags: "app|core|preload|api|success",
-              color: "green"
+              color1: "green"
             }, `Collected preload API config from ${manager.constructor.name}: ${
               managerAPIConfig.name
             } with api: ${Object.keys(managerAPIConfig.api).join(', ')}`);
@@ -115,7 +115,7 @@ export class App {
 
     this.logger.log({
       tags: "app|core|preload|api|complete",
-      color: "green"
+      color1: "green"
     }, `Collected ${this.preloadAPIs.length} preload API configs`);
   }
 

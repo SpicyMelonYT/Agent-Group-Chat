@@ -19,7 +19,7 @@ export class StoreManager extends Manager {
     try {
       this.logger.log({
         tags: "store|manager|init",
-        color: "blue",
+        color1: "blue",
         includeSource: true
       }, "StoreManager starting initialization");
 
@@ -27,14 +27,14 @@ export class StoreManager extends Manager {
       this.basePath = path.join(app.getPath("userData"), "App");
       this.logger.log({
         tags: "store|manager|init",
-        color: "cyan"
+        color1: "cyan"
       }, "Base path set to:", this.basePath);
 
       // Ensure the data directory exists
       await this.ensureDirectoryExists(this.basePath);
       this.logger.log({
         tags: "store|manager|init",
-        color: "green"
+        color1: "green"
       }, "Data directory ensured, initialization complete");
     } catch (error) {
       this.logger.error({

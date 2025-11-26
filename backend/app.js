@@ -21,39 +21,39 @@ export class MainApp extends App {
   async init() {
     this.logger.log({
       tags: "app|main|init",
-      color: "cyan",
+      color1: "cyan",
       includeSource: true
     }, "MainApp starting initialization");
 
     // Add managers to the application (order matters - dependencies first)
     this.logger.log({
       tags: "app|main|manager",
-      color: "blue"
+      color1: "blue"
     }, "Adding StoreManager");
     this.addManager(new StoreManager());
 
     this.logger.log({
       tags: "app|main|manager",
-      color: "blue"
+      color1: "blue"
     }, "Adding WindowManager");
     this.addManager(new WindowManager());
 
     this.logger.log({
       tags: "app|main|manager",
-      color: "blue"
+      color1: "blue"
     }, "Adding SectionManager");
     this.addManager(new SectionManager());
 
     // Initialize all managers
     this.logger.log({
       tags: "app|main|manager|init",
-      color: "yellow"
+      color1: "yellow"
     }, "Initializing all managers");
     await this.initManagers();
 
     this.logger.log({
       tags: "app|main|init|success",
-      color: "green"
+      color1: "green"
     }, "MainApp initialization complete");
   }
 }
