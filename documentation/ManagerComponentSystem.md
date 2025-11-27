@@ -13,6 +13,8 @@ The manager and component system provides a structured architecture for organizi
 
 ### Components
 - **Component**: Reusable UI element implemented as a custom HTML element
+- **Main Component**: Global component available to all sections (located in `frontend/components/`)
+- **Section-Specific Component**: Component scoped to a single section (located in `frontend/sections/{section}/components/`)
 - **Web Component**: Uses Shadow DOM for style isolation and encapsulation
 - **Custom Element**: Registered with `customElements.define()`
 - **Component Lifecycle**: Connected, attribute changes, disconnected
@@ -150,9 +152,44 @@ export class MainManager extends Manager {
 
 ## Component Architecture
 
+### Component Organization
+
+The component system is organized into two categories based on their scope and reusability:
+
+#### Main Components (Global/Reusable)
+**Location**: `frontend/components/`
+
+Main components are reusable UI elements that can be used across multiple sections of the application. These are general-purpose components that provide common functionality.
+
+**Examples:**
+- `tabs.js` - Tab content manager for showing/hiding content panels
+- Future components like buttons, modals, inputs, etc.
+
+**Characteristics:**
+- Available to all sections
+- Reusable across different contexts
+- General-purpose functionality
+- Registered globally with `customElements.define()`
+
+#### Section-Specific Components
+**Location**: `frontend/sections/{section-name}/components/`
+
+Section-specific components are UI elements designed for a particular section's unique needs. These components are tightly coupled to their section's functionality and are not intended for reuse elsewhere.
+
+**Examples:**
+- Chat message components (specific to chat section)
+- Agent configuration panels (specific to settings section)
+- Section-specific data visualizations
+
+**Characteristics:**
+- Scoped to a single section
+- Section-specific functionality
+- May depend on section managers or state
+- Loaded only when their section is active
+
 ### Web Component Base Pattern
 
-#### Location: `frontend/components/tabs.js`
+#### Main Component Example: `frontend/components/tabs.js`
 
 ```javascript
 export class Tabs extends HTMLElement {
@@ -194,6 +231,85 @@ export class Tabs extends HTMLElement {
 // Register custom element
 customElements.define('tabs', Tabs);
 ```
+
+#### Section-Specific Component Example
+
+```javascript
+// frontend/sections/chat/components/message-bubble.js
+export class MessageBubble extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._message = null;
+  }
+
+  static get observedAttributes() {
+    return ['message', 'sender', 'timestamp'];
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'message' || name === 'sender' || name === 'timestamp') {
+      this.render();
+    }
+  }
+
+  render() {
+    const message = this.getAttribute('message') || '';
+    const sender = this.getAttribute('sender') || 'Unknown';
+    const timestamp = this.getAttribute('timestamp') || '';
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          margin: 8px 0;
+        }
+        .message {
+          padding: 12px;
+          border-radius: 8px;
+          background: var(--message-bg, #f0f0f0);
+        }
+        .sender {
+          font-weight: bold;
+          margin-bottom: 4px;
+        }
+        .timestamp {
+          font-size: 0.8em;
+          color: #666;
+        }
+      </style>
+      <div class="message">
+        <div class="sender">${sender}</div>
+        <div class="content">${message}</div>
+        <div class="timestamp">${timestamp}</div>
+      </div>
+    `;
+  }
+}
+
+// Register custom element (section-specific)
+customElements.define('message-bubble', MessageBubble);
+```
+
+### Component Structure Pattern
+
+All components (both main and section-specific) follow a consistent structure pattern:
+
+1. **Documentation Header**: JSDoc comments with description, attributes, usage examples, methods, styling notes, and events
+2. **Class Definition**: Extends `HTMLElement` for Web Components standard
+3. **Constructor**: Calls `super()`, attaches Shadow DOM, initializes private state (underscore prefix)
+4. **Observed Attributes**: Static getter returns array of attributes to watch
+5. **Lifecycle Hooks**: `connectedCallback()` for initialization, `attributeChangedCallback()` for updates
+6. **Property Accessors**: Getters/setters that sync with HTML attributes
+7. **Render Method**: Sets `shadowRoot.innerHTML` with scoped styles and structure
+8. **Internal Methods**: Private logic with validation and state management
+9. **Public API**: Methods for external programmatic control
+10. **Event System**: Dispatches `CustomEvent` with detail objects for communication
+11. **Registration**: `customElements.define()` at the end of the file
 
 ### Component Features
 
@@ -249,24 +365,26 @@ class Tabs extends HTMLElement {
 
 ## Manager-Component Integration
 
-### Component Usage in Managers
+### Using Main Components in Managers
+
+Managers can use main (global) components that are available across all sections:
 
 ```javascript
 export class ContentManager extends Manager {
   async initElementReferences() {
-    // Get component reference
+    // Get main component reference (available globally)
     this.tabsComponent = document.querySelector('tabs');
   }
 
   async initEventListeners() {
-    // Listen to component events
+    // Listen to main component events
     this.tabsComponent.addEventListener('load', (e) => {
       this.handleTabChange(e.detail.index);
     });
   }
 
   async initStates() {
-    // Initialize component state
+    // Initialize main component state
     this.tabsComponent.setIndex(0);
   }
 
@@ -280,6 +398,40 @@ export class ContentManager extends Manager {
         this.showSettingsContent();
         break;
     }
+  }
+}
+```
+
+### Using Section-Specific Components in Managers
+
+Managers can use section-specific components that are only available within their section:
+
+```javascript
+// frontend/sections/chat/managers/chat-manager.js
+export class ChatManager extends Manager {
+  async initElementReferences() {
+    // Get section-specific component references
+    this.messageContainer = document.querySelector('.message-container');
+    this.messageComponents = document.querySelectorAll('message-bubble');
+  }
+
+  async initEventListeners() {
+    // Listen to section-specific component events
+    this.messageComponents.forEach(msg => {
+      msg.addEventListener('message-click', (e) => {
+        this.handleMessageClick(e.detail.messageId);
+      });
+    });
+  }
+
+  async addMessage(message, sender, timestamp) {
+    // Create and use section-specific component
+    const messageBubble = document.createElement('message-bubble');
+    messageBubble.setAttribute('message', message);
+    messageBubble.setAttribute('sender', sender);
+    messageBubble.setAttribute('timestamp', timestamp);
+    
+    this.messageContainer.appendChild(messageBubble);
   }
 }
 ```
@@ -460,28 +612,57 @@ export class MainSection extends Section {
 
 ## Component Registration
 
-### Global Component Registration
-```javascript
-// frontend/components/index.js
-import { Tabs } from './tabs.js';
-import { Modal } from './modal.js';
+### Main Component Registration
 
-// Register all components
-customElements.define('tabs', Tabs);
-customElements.define('modal', Modal);
-```
+Main components are registered globally and available to all sections. Each component file registers itself at the end of the file.
 
-### Lazy Component Loading
 ```javascript
-export async function loadComponent(name) {
-  switch(name) {
-    case 'chart':
-      const { ChartComponent } = await import('./chart.js');
-      customElements.define('data-chart', ChartComponent);
-      break;
-  }
+// frontend/components/tabs.js
+export class Tabs extends HTMLElement {
+  // ... component implementation
 }
+
+// Register globally - available to all sections
+customElements.define('tabs', Tabs);
 ```
+
+**Registration Pattern:**
+- Each main component file registers itself at the end
+- Components are loaded when the main component bundle is imported
+- Available immediately to all sections
+
+### Section-Specific Component Registration
+
+Section-specific components are registered within their section's initialization and are only available when that section is active.
+
+```javascript
+// frontend/sections/chat/components/message-bubble.js
+export class MessageBubble extends HTMLElement {
+  // ... component implementation
+}
+
+// Register section-specific component
+customElements.define('message-bubble', MessageBubble);
+```
+
+**Registration Pattern:**
+- Each section-specific component registers itself at the end of its file
+- Components are loaded when their section's JavaScript is executed
+- Only available within the section that loads them
+- May depend on section managers or section-specific state
+
+### Component Loading Strategy
+
+**Main Components:**
+- Loaded once at application startup or when main component bundle is imported
+- Persist throughout the application lifecycle
+- Can be imported in section files or a central component index
+
+**Section-Specific Components:**
+- Loaded when their section is initialized
+- Unloaded when section is deactivated (if needed)
+- Scoped to section's component directory
+- Imported in section's main index.js file
 
 ## Lifecycle Management
 
