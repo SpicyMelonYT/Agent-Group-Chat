@@ -1,12 +1,13 @@
 /**
  * Chat Message Component
  *
- * A component for displaying individual chat messages or multi-section assistant responses.
+ * A component for displaying individual chat messages. The root element is a container
+ * with no styling - it contains individual section bubbles that have backgrounds and borders.
  *
  * Attributes:
  * - sender: Message sender (e.g., "user", "assistant", "system")
- * - timestamp: Optional timestamp string (for user messages or single-section messages)
- * - content: Message content text (for user messages or single-section messages)
+ * - timestamp: Optional timestamp string (for user messages - applied to the section)
+ * - content: Message content text (for user messages)
  *
  * For assistant messages with multiple sections, use the API methods:
  * - addSection(sectionType, timestamp): Add a new section
@@ -27,8 +28,10 @@
  * message.updateSectionContent(1, 'Here is my response');
  *
  * Styling:
- * - Different styling for user vs assistant messages
- * - User messages align right, assistant messages align left
+ * - Root element has no background/border - just a container
+ * - Each section is its own bubble with background/border
+ * - User sections: blue background, right-aligned
+ * - Assistant sections: gray background, left-aligned
  * - Collapsible sections for thinking, commentary, and function-call
  * - Icons for different section types
  * - Dark mode minimalistic design
@@ -81,7 +84,7 @@ export class ChatMessage extends HTMLElement {
     const isAssistant = this.sender === "assistant";
 
     // For assistant messages, create structure for multiple sections
-    // For user/system, render simple message
+    // For user/system, render simple message with one section
     if (isAssistant) {
       this.renderAssistantStructure();
     } else {
@@ -98,10 +101,7 @@ export class ChatMessage extends HTMLElement {
         ${this.getStyles(isUser, isSystem)}
       </style>
       <div class="message-wrapper">
-        <div class="message-bubble assistant">
-          <div class="sections-container"></div>
-        </div>
-        <div class="message-timestamp" style="display: none;"></div>
+        <div class="sections-container"></div>
       </div>
     `;
   }
@@ -110,18 +110,29 @@ export class ChatMessage extends HTMLElement {
     const isUser = this.sender === "user";
     const isSystem = this.sender === "system";
     const content = this.content;
+    const timestamp = this.timestamp;
 
+    // For user/system messages, create a single section
+    // We'll use "response" as the section type for user/system messages
+    const sectionType = isSystem ? "system" : "response";
+    
     this.shadowRoot.innerHTML = `
       <style>
         ${this.getStyles(isUser, isSystem)}
       </style>
       <div class="message-wrapper">
-        <div class="message-bubble ${this.sender}">
-          <div class="message-content">${content}</div>
-        </div>
-        ${this.timestamp ? `<div class="message-timestamp">${this.timestamp}</div>` : ""}
+        <div class="sections-container"></div>
       </div>
     `;
+
+    // After rendering, add the single section
+    // Use setTimeout to ensure shadowRoot is ready
+    setTimeout(() => {
+      const sectionIndex = this.addSection(sectionType, timestamp);
+      if (sectionIndex >= 0) {
+        this.updateSectionContent(sectionIndex, content);
+      }
+    }, 0);
   }
 
   getStyles(isUser, isSystem) {
@@ -139,22 +150,38 @@ export class ChatMessage extends HTMLElement {
           width: 100%;
         }
 
-        .message-bubble {
-          max-width: 70%;
+        .sections-container {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .section-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: ${isUser ? "flex-end" : "flex-start"};
+        }
+
+        .section {
+          display: flex;
+          flex-direction: column;
           padding: 8px 12px;
           border-radius: 8px;
           word-wrap: break-word;
           position: relative;
+          max-width: 70%;
+          width: fit-content;
+          min-width: fit-content;
         }
 
-        .message-bubble.user {
+        .section.user,
+        .section.response {
           background-color: var(--message-user-bg, #2a5c8f);
           color: var(--message-user-text, #e0e0e0);
           border-bottom-right-radius: 4px;
-          padding: 8px 12px;
         }
 
-        .message-bubble.assistant {
+        .section.assistant {
           background-color: var(--message-assistant-bg, #2a2a2a);
           color: var(--message-assistant-text, #e0e0e0);
           border: 1px solid var(--message-assistant-border, #353535);
@@ -162,7 +189,7 @@ export class ChatMessage extends HTMLElement {
           padding: 8px;
         }
 
-        .message-bubble.system {
+        .section.system {
           background-color: var(--message-system-bg, #1a1a1a);
           color: var(--message-system-text, #888888);
           border: 1px solid var(--message-system-border, #2a2a2a);
@@ -172,17 +199,6 @@ export class ChatMessage extends HTMLElement {
           font-style: italic;
         }
 
-        .sections-container {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .section {
-          display: flex;
-          flex-direction: column;
-        }
-
         .section-header {
           display: flex;
           align-items: center;
@@ -190,6 +206,8 @@ export class ChatMessage extends HTMLElement {
           cursor: pointer;
           user-select: none;
           margin-bottom: 0;
+          flex-shrink: 0;
+          min-width: fit-content;
         }
 
         .section-header:not(.collapsed) {
@@ -208,6 +226,7 @@ export class ChatMessage extends HTMLElement {
           font-size: 12px;
           font-weight: 600;
           color: var(--message-section-label-color, #b0b0b0);
+          white-space: nowrap;
         }
 
         .collapse-indicator {
@@ -248,20 +267,6 @@ export class ChatMessage extends HTMLElement {
           margin-top: 2px;
           padding: 0 4px;
         }
-
-        .message-content {
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.3;
-          white-space: normal;
-        }
-
-        .message-timestamp {
-          font-size: 11px;
-          color: var(--message-timestamp-color, #666666);
-          margin-top: 2px;
-          padding: 0 4px;
-        }
       `;
   }
 
@@ -288,6 +293,8 @@ export class ChatMessage extends HTMLElement {
         return "Function Call";
       case "response":
         return "";
+      case "system":
+        return "";
       default:
         return "";
     }
@@ -298,17 +305,12 @@ export class ChatMessage extends HTMLElement {
   }
 
   /**
-   * Add a new section to an assistant message
-   * @param {string} sectionType - Type of section ("thinking", "commentary", "function-call", "response")
+   * Add a new section to a message
+   * @param {string} sectionType - Type of section ("thinking", "commentary", "function-call", "response", "system", "user")
    * @param {string} timestamp - Optional timestamp string
    * @returns {number} Index of the newly added section
    */
   addSection(sectionType, timestamp = "") {
-    if (this.sender !== "assistant") {
-      console.warn("addSection can only be called on assistant messages");
-      return -1;
-    }
-
     const sectionsContainer = this.shadowRoot?.querySelector(".sections-container");
     if (!sectionsContainer) {
       console.error("Sections container not found. Component may not be initialized.");
@@ -320,9 +322,22 @@ export class ChatMessage extends HTMLElement {
     const icon = this.getIcon(sectionType);
     const sectionLabel = this.getSectionLabel(sectionType);
 
+    // Determine the CSS class for styling based on sender and section type
+    let sectionClass = sectionType;
+    // For user messages, use "user" class; for assistant, use section type or "assistant"
+    if (this.sender === "user" && sectionType === "response") {
+      sectionClass = "user";
+    } else if (this.sender === "assistant") {
+      sectionClass = "assistant";
+    }
+
+    // Create section wrapper to contain section and timestamp
+    const sectionWrapper = document.createElement("div");
+    sectionWrapper.className = "section-wrapper";
+
     // Create section element
     const section = document.createElement("div");
-    section.className = "section";
+    section.className = `section ${sectionClass}`;
     section.setAttribute("data-section-type", sectionType);
     section.setAttribute("data-section-index", sectionIndex.toString());
 
@@ -331,7 +346,7 @@ export class ChatMessage extends HTMLElement {
     sectionContent.className = `section-content ${isCollapsible ? "collapsed" : ""}`;
     sectionContent.textContent = ""; // Start empty for streaming
 
-    // Create timestamp element
+    // Create timestamp element (outside the section bubble)
     const timestampEl = document.createElement("div");
     timestampEl.className = "section-timestamp";
     timestampEl.textContent = timestamp || "";
@@ -366,16 +381,21 @@ export class ChatMessage extends HTMLElement {
     }
 
     section.appendChild(sectionContent);
-    section.appendChild(timestampEl);
+    
+    // Add section and timestamp to wrapper (timestamp outside the bubble)
+    sectionWrapper.appendChild(section);
+    sectionWrapper.appendChild(timestampEl);
 
-    sectionsContainer.appendChild(section);
+    sectionsContainer.appendChild(sectionWrapper);
 
     // Store section data
     this._sections.push({
       type: sectionType,
       timestamp: timestamp,
       element: section,
+      wrapperElement: sectionWrapper,
       contentElement: sectionContent,
+      timestampElement: timestampEl,
       headerElement: isCollapsible ? section.querySelector(".section-header") : null,
     });
 
