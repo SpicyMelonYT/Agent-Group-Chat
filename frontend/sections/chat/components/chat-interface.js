@@ -184,19 +184,36 @@ export class ChatInterface extends HTMLElement {
   /**
    * Add a message to the chat
    * @param {string} sender - Message sender ("user", "assistant", "system")
-   * @param {string} content - Message content
+   * @param {string} content - Message content (for user/system messages, or initial content for assistant)
    * @param {string} timestamp - Optional timestamp string
-   * @param {string} sectionType - Optional section type ("thinking", "commentary", "function-call", "response")
+   * @returns {HTMLElement} The created chat-message element
    */
-  addMessage(sender, content, timestamp = "", sectionType = "") {
-    const messageBubble = document.createElement("message-bubble");
+  addMessage(sender, content = "", timestamp = "") {
+    const messageBubble = document.createElement("chat-message");
     messageBubble.setAttribute("sender", sender);
-    messageBubble.setAttribute("content", content);
-    if (timestamp) {
-      messageBubble.setAttribute("timestamp", timestamp);
-    }
-    if (sectionType) {
-      messageBubble.setAttribute("section-type", sectionType);
+    
+    if (sender === "assistant") {
+      // For assistant messages, create empty bubble (sections will be added via API)
+      // If content is provided, add it as a response section
+      if (content) {
+        // Wait for component to initialize, then add section
+        const addContent = () => {
+          const sectionIndex = messageBubble.addSection("response", timestamp);
+          messageBubble.updateSectionContent(sectionIndex, content);
+        };
+        
+        if (messageBubble.shadowRoot && messageBubble.shadowRoot.querySelector(".sections-container")) {
+          addContent();
+        } else {
+          messageBubble.addEventListener("chat-message-ready", addContent, { once: true });
+        }
+      }
+    } else {
+      // For user/system messages, set content and timestamp directly
+      messageBubble.setAttribute("content", content);
+      if (timestamp) {
+        messageBubble.setAttribute("timestamp", timestamp);
+      }
     }
 
     const messagesContainer = this.shadowRoot.querySelector(
@@ -207,16 +224,16 @@ export class ChatInterface extends HTMLElement {
       // Scroll to bottom
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+
+    return messageBubble;
   }
 
   /**
-   * Add a message section (for multi-section AI responses)
-   * @param {string} sectionType - Section type ("thinking", "commentary", "function-call", "response")
-   * @param {string} content - Section content
-   * @param {string} timestamp - Optional timestamp string
+   * Create a new assistant message bubble (for multi-section responses)
+   * @returns {HTMLElement} The created chat-message element
    */
-  addMessageSection(sectionType, content, timestamp = "") {
-    this.addMessage("assistant", content, timestamp, sectionType);
+  createAssistantMessage() {
+    return this.addMessage("assistant");
   }
 
   clearMessages() {
@@ -224,8 +241,8 @@ export class ChatInterface extends HTMLElement {
       ".messages-container"
     );
     if (messagesContainer) {
-      // Remove all message-bubble elements
-      const messages = messagesContainer.querySelectorAll("message-bubble");
+      // Remove all chat-message elements
+      const messages = messagesContainer.querySelectorAll("chat-message");
       messages.forEach((msg) => msg.remove());
     }
   }

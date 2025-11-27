@@ -91,47 +91,66 @@ export class ChatManager extends Manager {
       "12:00 PM"
     );
 
-    // Example AI response with multiple sections
+    // Example AI response with multiple sections - all in ONE message bubble
     // This demonstrates the timeline of generation: thinking → commentary → function-call → thinking → response
-    setTimeout(() => {
-      this.chatInterface.addMessageSection(
-        "thinking",
-        "The user is asking about how the chat system works. I should explain the component-based architecture, the event system, and how messages are structured. Let me think about the best way to explain this clearly.",
-        "12:00 PM"
-      );
-    }, 100);
+    const assistantBubble = this.chatInterface.createAssistantMessage();
+    
+    // Wait for component to be connected and initialized
+    const addSections = () => {
+      // Add sections one by one with delays to simulate streaming
+      setTimeout(() => {
+        const sectionIndex = assistantBubble.addSection("thinking", "12:00 PM");
+        assistantBubble.updateSectionContent(
+          sectionIndex,
+          "The user is asking about how the chat system works. I should explain the component-based architecture, the event system, and how messages are structured. Let me think about the best way to explain this clearly."
+        );
+      }, 100);
 
-    setTimeout(() => {
-      this.chatInterface.addMessageSection(
-        "commentary",
-        "This is a good opportunity to demonstrate the multi-section response system. The user will be able to see how different parts of the AI's process are broken down into separate, collapsible sections.",
-        "12:00 PM"
-      );
-    }, 300);
+      setTimeout(() => {
+        const sectionIndex = assistantBubble.addSection("commentary", "12:00 PM");
+        assistantBubble.updateSectionContent(
+          sectionIndex,
+          "This is a good opportunity to demonstrate the multi-section response system. The user will be able to see how different parts of the AI's process are broken down into separate, collapsible sections."
+        );
+      }, 300);
 
-    setTimeout(() => {
-      this.chatInterface.addMessageSection(
-        "function-call",
-        '{\n  "function": "getSystemInfo",\n  "arguments": {\n    "component": "chat-interface",\n    "details": true\n  }\n}',
-        "12:00 PM"
-      );
-    }, 500);
+      setTimeout(() => {
+        const sectionIndex = assistantBubble.addSection("function-call", "12:00 PM");
+        assistantBubble.updateSectionContent(
+          sectionIndex,
+          '{\n  "function": "getSystemInfo",\n  "arguments": {\n    "component": "chat-interface",\n    "details": true\n  }\n}'
+        );
+      }, 500);
 
-    setTimeout(() => {
-      this.chatInterface.addMessageSection(
-        "thinking",
-        "Now I have all the information I need. I should provide a clear, structured explanation that covers the main components and how they work together.",
-        "12:00 PM"
-      );
-    }, 700);
+      setTimeout(() => {
+        const sectionIndex = assistantBubble.addSection("thinking", "12:00 PM");
+        assistantBubble.updateSectionContent(
+          sectionIndex,
+          "Now I have all the information I need. I should provide a clear, structured explanation that covers the main components and how they work together."
+        );
+      }, 700);
 
-    setTimeout(() => {
-      this.chatInterface.addMessageSection(
-        "response",
-        "The chat system is built using a component-based architecture with Web Components. Here's how it works:\n\n1. **Message Bubbles**: Each message is displayed in a `message-bubble` component that supports different section types (thinking, commentary, function calls, and regular responses).\n\n2. **Chat Interface**: The main `chat-interface` component manages the message list and input area, dispatching custom events for message sending and changes.\n\n3. **Chat Manager**: The `ChatManager` hooks into the chat interface events and manages the chat state, eventually integrating with the backend LLM manager.\n\n4. **Multi-Section Responses**: AI responses can be broken down into multiple sections, each with its own timestamp and collapsible content for thinking/commentary/function-call sections.",
-        "12:00 PM"
-      );
-    }, 900);
+      setTimeout(() => {
+        const sectionIndex = assistantBubble.addSection("response", "12:00 PM");
+        assistantBubble.updateSectionContent(
+          sectionIndex,
+          "The chat system is built using a component-based architecture with Web Components. Here's how it works:\n\n1. **Chat Messages**: Each message is displayed in a `chat-message` component that supports different section types (thinking, commentary, function calls, and regular responses).\n\n2. **Chat Interface**: The main `chat-interface` component manages the message list and input area, dispatching custom events for message sending and changes.\n\n3. **Chat Manager**: The `ChatManager` hooks into the chat interface events and manages the chat state, eventually integrating with the backend LLM manager.\n\n4. **Multi-Section Responses**: AI responses can be broken down into multiple sections, each with its own timestamp and collapsible content for thinking/commentary/function-call sections."
+        );
+      }, 900);
+    };
+
+    // Wait for the component to be ready
+    if (assistantBubble.shadowRoot && assistantBubble.shadowRoot.querySelector(".sections-container")) {
+      addSections();
+    } else {
+      assistantBubble.addEventListener("chat-message-ready", addSections, { once: true });
+      // Fallback: try after a short delay
+      setTimeout(() => {
+        if (assistantBubble.shadowRoot && assistantBubble.shadowRoot.querySelector(".sections-container")) {
+          addSections();
+        }
+      }, 50);
+    }
   }
 }
 
