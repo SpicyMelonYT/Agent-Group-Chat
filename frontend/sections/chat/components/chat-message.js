@@ -53,7 +53,9 @@ export class ChatMessage extends HTMLElement {
       this.initialize();
       this._isInitialized = true;
       // Dispatch event to notify that component is ready
-      this.dispatchEvent(new CustomEvent("chat-message-ready", { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent("chat-message-ready", { bubbles: true, composed: true })
+      );
     }
   }
 
@@ -115,7 +117,7 @@ export class ChatMessage extends HTMLElement {
     // For user/system messages, create a single segment
     // We'll use "response" as the segment type for user/system messages
     const segmentType = isSystem ? "system" : "response";
-    
+
     this.shadowRoot.innerHTML = `
       <style>
         ${this.getStyles(isUser, isSystem)}
@@ -311,7 +313,7 @@ export class ChatMessage extends HTMLElement {
           top: 0;
           left: 0;
           right: 0;
-          height: calc(100% - 40px);
+          height: calc(100% - 33px);
           pointer-events: none;
           overflow: visible;
         }
@@ -323,7 +325,7 @@ export class ChatMessage extends HTMLElement {
           display: flex;
           justify-content: flex-end;
           padding: 0 10px;
-          margin-top: 27px;
+          margin-top: -7px;
           pointer-events: none;
           height: 0;
           overflow: visible;
@@ -332,7 +334,7 @@ export class ChatMessage extends HTMLElement {
         .code-block-copy-button {
           position: absolute;
           top: 0;
-          right: 10px;
+          right: 3px;
           margin-top: 10px;
           background: rgba(0, 0, 0, 0.45);
           backdrop-filter: blur(4px);
@@ -344,6 +346,10 @@ export class ChatMessage extends HTMLElement {
           border-radius: 4px;
           transition: background-color 0.2s ease, color 0.2s ease;
           pointer-events: auto;
+          user-select: none;
+          -webkit-user-select: none;
+          -ms-user-select: none;
+          -moz-user-select: none;
         }
 
         .code-block-copy-button:hover {
@@ -435,9 +441,13 @@ export class ChatMessage extends HTMLElement {
    * @returns {number} Index of the newly added segment
    */
   addSegment(segmentType, timestamp = "") {
-    const segmentsContainer = this.shadowRoot?.querySelector(".segments-container");
+    const segmentsContainer = this.shadowRoot?.querySelector(
+      ".segments-container"
+    );
     if (!segmentsContainer) {
-      console.error("Segments container not found. Component may not be initialized.");
+      console.error(
+        "Segments container not found. Component may not be initialized."
+      );
       return -1;
     }
 
@@ -467,7 +477,9 @@ export class ChatMessage extends HTMLElement {
 
     // Create segment content
     const segmentContent = document.createElement("div");
-    segmentContent.className = `segment-content ${isCollapsible ? "collapsed" : ""}`;
+    segmentContent.className = `segment-content ${
+      isCollapsible ? "collapsed" : ""
+    }`;
     segmentContent.textContent = ""; // Start empty for streaming
 
     // Create timestamp element (outside the segment bubble)
@@ -505,7 +517,7 @@ export class ChatMessage extends HTMLElement {
     }
 
     segment.appendChild(segmentContent);
-    
+
     // Add segment and timestamp to wrapper (timestamp outside the bubble)
     segmentWrapper.appendChild(segment);
     segmentWrapper.appendChild(timestampEl);
@@ -520,7 +532,9 @@ export class ChatMessage extends HTMLElement {
       wrapperElement: segmentWrapper,
       contentElement: segmentContent,
       timestampElement: timestampEl,
-      headerElement: isCollapsible ? segment.querySelector(".segment-header") : null,
+      headerElement: isCollapsible
+        ? segment.querySelector(".segment-header")
+        : null,
       rawContent: "", // Store raw markdown content for streaming
     });
 
@@ -542,7 +556,7 @@ export class ChatMessage extends HTMLElement {
     if (segment && segment.contentElement) {
       // Store raw content for streaming support
       segment.rawContent = content || "";
-      
+
       // Parse markdown if markdown manager is available
       if (window.markdownManager) {
         const html = window.markdownManager.parse(segment.rawContent);
@@ -566,7 +580,9 @@ export class ChatMessage extends HTMLElement {
    * @returns {boolean} True if segment was found and updated
    */
   updateSegmentContentByType(segmentType, content) {
-    const segmentIndex = this._segments.findIndex((s) => s.type === segmentType);
+    const segmentIndex = this._segments.findIndex(
+      (s) => s.type === segmentType
+    );
     if (segmentIndex === -1) {
       return false;
     }
@@ -589,7 +605,7 @@ export class ChatMessage extends HTMLElement {
     if (segment && segment.contentElement) {
       // Append to raw content and re-parse (necessary for proper markdown parsing)
       segment.rawContent = (segment.rawContent || "") + additionalContent;
-      
+
       // Parse markdown if markdown manager is available
       if (window.markdownManager) {
         const html = window.markdownManager.parse(segment.rawContent);
@@ -613,7 +629,9 @@ export class ChatMessage extends HTMLElement {
    * @returns {boolean} True if segment was found and updated
    */
   appendSegmentContentByType(segmentType, additionalContent) {
-    const segmentIndex = this._segments.findIndex((s) => s.type === segmentType);
+    const segmentIndex = this._segments.findIndex(
+      (s) => s.type === segmentType
+    );
     if (segmentIndex === -1) {
       return false;
     }
@@ -652,10 +670,10 @@ export class ChatMessage extends HTMLElement {
 
     // Find all pre > code blocks (standard markdown code block structure)
     const codeBlocks = container.querySelectorAll("pre > code");
-    
+
     codeBlocks.forEach((codeElement) => {
       const preElement = codeElement.parentElement;
-      
+
       // Skip if already processed (has code-block-panel parent)
       if (preElement.closest(".code-block-panel")) {
         return;
@@ -699,18 +717,19 @@ export class ChatMessage extends HTMLElement {
       copyButton.className = "code-block-copy-button";
       copyButton.textContent = "Copy";
       copyButton.setAttribute("aria-label", "Copy code to clipboard");
-      
+
       // Copy functionality
       copyButton.addEventListener("click", async () => {
         try {
           const codeText = codeElement.textContent;
           await navigator.clipboard.writeText(codeText);
-          
+
           // Visual feedback
           const originalText = copyButton.textContent;
           copyButton.textContent = "Copied!";
-          copyButton.style.color = "var(--code-block-copy-success-color, #4caf50)";
-          
+          copyButton.style.color =
+            "var(--code-block-copy-success-color, #4caf50)";
+
           setTimeout(() => {
             copyButton.textContent = originalText;
             copyButton.style.color = "";
@@ -771,7 +790,7 @@ export class ChatMessage extends HTMLElement {
       if (child.nodeType === Node.ELEMENT_NODE) {
         // If this element has children, drill down to find the actual edge element
         const deeper = this._findEdgeElement(child, searchForward);
-        return (deeper || child);
+        return deeper || child;
       }
     }
 
