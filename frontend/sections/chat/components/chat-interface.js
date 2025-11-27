@@ -19,7 +19,8 @@
  * });
  *
  * Methods:
- * - addMessage(sender, content, timestamp): Add a message to the chat
+ * - addMessage(sender, content, timestamp, sectionType): Add a message to the chat
+ * - addMessageSection(sectionType, content, timestamp): Add a message section (for multi-section AI responses)
  * - clearMessages(): Clear all messages
  * - setInputValue(value): Set the input textarea value
  * - getInputValue(): Get the current input value
@@ -180,12 +181,22 @@ export class ChatInterface extends HTMLElement {
   }
 
   // Public methods
-  addMessage(sender, content, timestamp = "") {
+  /**
+   * Add a message to the chat
+   * @param {string} sender - Message sender ("user", "assistant", "system")
+   * @param {string} content - Message content
+   * @param {string} timestamp - Optional timestamp string
+   * @param {string} sectionType - Optional section type ("thinking", "commentary", "function-call", "response")
+   */
+  addMessage(sender, content, timestamp = "", sectionType = "") {
     const messageBubble = document.createElement("message-bubble");
     messageBubble.setAttribute("sender", sender);
     messageBubble.setAttribute("content", content);
     if (timestamp) {
       messageBubble.setAttribute("timestamp", timestamp);
+    }
+    if (sectionType) {
+      messageBubble.setAttribute("section-type", sectionType);
     }
 
     const messagesContainer = this.shadowRoot.querySelector(
@@ -196,6 +207,16 @@ export class ChatInterface extends HTMLElement {
       // Scroll to bottom
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+  }
+
+  /**
+   * Add a message section (for multi-section AI responses)
+   * @param {string} sectionType - Section type ("thinking", "commentary", "function-call", "response")
+   * @param {string} content - Section content
+   * @param {string} timestamp - Optional timestamp string
+   */
+  addMessageSection(sectionType, content, timestamp = "") {
+    this.addMessage("assistant", content, timestamp, sectionType);
   }
 
   clearMessages() {
