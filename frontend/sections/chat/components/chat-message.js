@@ -252,6 +252,21 @@ export class ChatMessage extends HTMLElement {
           display: none;
         }
 
+        /* Remove top margin from first paragraph and bottom margin from last paragraph */
+        .segment-content > p:first-child {
+          margin-top: 0;
+        }
+
+        .segment-content > p:last-child {
+          margin-bottom: 0;
+        }
+
+        /* If there's only one paragraph, remove both margins */
+        .segment-content > p:only-child {
+          margin-top: 0;
+          margin-bottom: 0;
+        }
+
         /* Styling for content inside collapsible segments */
         .segment[data-segment-type="thinking"] .segment-content:not(.collapsed),
         .segment[data-segment-type="commentary"] .segment-content:not(.collapsed),
@@ -425,6 +440,7 @@ export class ChatMessage extends HTMLElement {
       if (window.markdownManager) {
         const html = window.markdownManager.parse(segment.rawContent);
         segment.contentElement.innerHTML = html;
+        this._trimSegmentSpacing(segment.contentElement);
       } else {
         // Fallback to plain text if markdown manager not available
         segment.contentElement.textContent = segment.rawContent;
@@ -467,6 +483,7 @@ export class ChatMessage extends HTMLElement {
       if (window.markdownManager) {
         const html = window.markdownManager.parse(segment.rawContent);
         segment.contentElement.innerHTML = html;
+        this._trimSegmentSpacing(segment.contentElement);
       } else {
         // Fallback to plain text if markdown manager not available
         segment.contentElement.textContent = segment.rawContent;
@@ -487,6 +504,61 @@ export class ChatMessage extends HTMLElement {
     }
     this.appendSegmentContent(segmentIndex, additionalContent);
     return true;
+  }
+
+  /**
+   * Remove leading/trailing margins from the first and last rendered elements
+   * inside a segment. This keeps the visual padding consistent regardless of
+   * the markdown structure (paragraphs, lists, blockquotes, etc).
+   * @param {HTMLElement} container
+   */
+  _trimSegmentSpacing(container) {
+    if (!container) return;
+
+    const firstElement = this._findEdgeElement(container, true);
+    const lastElement = this._findEdgeElement(container, false);
+
+    if (firstElement) {
+      firstElement.style.marginTop = "0px";
+    }
+
+    if (lastElement) {
+      lastElement.style.marginBottom = "0px";
+    }
+  }
+
+  /**
+   * Find the first or last meaningful descendant element (depth-first).
+   * Text nodes with only whitespace are ignored.
+   * @param {Node} node
+   * @param {boolean} searchForward - true to search from start, false from end
+   * @returns {HTMLElement|null}
+   */
+  _findEdgeElement(node, searchForward = true) {
+    if (!node || !node.childNodes || !node.childNodes.length) {
+      return null;
+    }
+
+    const children = Array.from(node.childNodes);
+    const iterable = searchForward ? children : children.reverse();
+
+    for (const child of iterable) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (child.textContent && child.textContent.trim().length > 0) {
+          // Text node with content - no margin to trim
+          return null;
+        }
+        continue;
+      }
+
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        // If this element has children, drill down to find the actual edge element
+        const deeper = this._findEdgeElement(child, searchForward);
+        return (deeper || child);
+      }
+    }
+
+    return null;
   }
 }
 
