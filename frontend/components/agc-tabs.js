@@ -140,8 +140,9 @@ export class TabView extends HTMLElement {
         })
       );
 
-      // Remove active class
+      // Remove active class and hide element
       oldElement.classList.remove("active");
+      oldElement.style.display = "none";
     }
 
     // Update current index
@@ -160,8 +161,10 @@ export class TabView extends HTMLElement {
         })
       );
 
-      // Add active class
+      // Add active class and show element
       newElement.classList.add("active");
+      newElement.style.display = "flex";
+      newElement.style.flexDirection = "column";
     }
   }
 
@@ -169,19 +172,24 @@ export class TabView extends HTMLElement {
     const children = this.children;
     const targetIndex = this.index;
 
-    // Clear all active classes
+    // Hide all tabs and clear active classes
     Array.from(children).forEach((child) => {
       child.classList.remove("active");
+      child.style.display = "none";
     });
 
-    // Set active class on target tab
+    // Set active class and show target tab
     const activeChild = children[targetIndex];
     if (activeChild) {
       activeChild.classList.add("active");
+      activeChild.style.display = "flex";
+      activeChild.style.flexDirection = "column";
       this._currentIndex = targetIndex;
     } else if (children.length > 0) {
       // If invalid index, default to first tab
       children[0].classList.add("active");
+      children[0].style.display = "flex";
+      children[0].style.flexDirection = "column";
       this._currentIndex = 0;
     }
   }
