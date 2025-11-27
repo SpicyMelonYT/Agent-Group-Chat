@@ -617,19 +617,19 @@ export class MainSection extends Section {
 Main components are registered globally and available to all sections. Each component file registers itself at the end of the file.
 
 ```javascript
-// frontend/components/tabs.js
-export class Tabs extends HTMLElement {
+// frontend/components/tab-view.js
+export class TabView extends HTMLElement {
   // ... component implementation
 }
 
 // Register globally - available to all sections
-customElements.define('tabs', Tabs);
+customElements.define('tab-view', TabView);
 ```
 
 **Registration Pattern:**
 - Each main component file registers itself at the end
-- Components are loaded when the main component bundle is imported
-- Available immediately to all sections
+- Components are automatically loaded by ComponentManager during section initialization
+- Available immediately to all sections after loading
 
 ### Section-Specific Component Registration
 
@@ -647,22 +647,160 @@ customElements.define('message-bubble', MessageBubble);
 
 **Registration Pattern:**
 - Each section-specific component registers itself at the end of its file
-- Components are loaded when their section's JavaScript is executed
+- Components are automatically loaded by ComponentManager when their section initializes
 - Only available within the section that loads them
 - May depend on section managers or section-specific state
+
+## Component Manager System
+
+### Overview
+
+The Component Manager system provides automatic discovery and dynamic loading of components. It consists of two managers working together:
+
+- **Backend ComponentManager**: Scans the frontend directory structure to find component files
+- **Frontend ComponentManager**: Dynamically imports and loads components based on path specifications
+
+### Backend Component Manager
+
+**Location**: `backend/managers/component-manager.js`
+
+The backend ComponentManager scans the frontend directory structure to discover JavaScript component files.
+
+#### Key Features
+- **Directory Scanning**: Recursively finds all `.js` files in specified directories
+- **Path Resolution**: Takes relative paths from the frontend root directory
+- **IPC Integration**: Exposes API for frontend to request component file lists
+
+#### API Methods
+
+```javascript
+/**
+ * Get all JavaScript component files in a directory
+ * @param {string} relativePath - Relative path from frontend directory
+ *   Examples: "components" or "sections/main/components"
+ * @returns {Promise<Array<string>>} - Array of relative file paths
+ */
+async getComponentFiles(relativePath)
+```
+
+#### Usage Example
+
+```javascript
+// Backend automatically handles this via IPC
+// Frontend calls: window.componentAPI.getComponentFiles("components")
+// Returns: ["components/tab-view.js", "components/agc-button.js"]
+```
+
+### Frontend Component Manager
+
+**Location**: `frontend/managers/component-manager.js`
+
+The frontend ComponentManager handles dynamic loading of components during section initialization.
+
+#### Constructor
+
+```javascript
+constructor(...pathSpecs)
+```
+
+**Parameters:**
+- `pathSpecs`: Variable arguments specifying which components to load
+  - Empty string `""`: Loads main components from `frontend/components/`
+  - Section name (e.g., `"main"`): Loads section-specific components from `frontend/sections/{section}/components/`
+
+#### Initialization
+
+The ComponentManager processes all path specs during its `init()` method:
+
+```javascript
+async init() {
+  // Process all path specs during initialization
+  for (const pathSpec of this.pathSpecs) {
+    await this.load(pathSpec);
+  }
+  
+  // Call parent init after loading components
+  await super.init();
+}
+```
+
+#### Load Method
+
+```javascript
+/**
+ * Load components from a directory
+ * @param {string} pathSpec - Empty string "" for main components, 
+ *   or section name like "main" for section-specific components
+ * @returns {Promise<Array<string>>} - Array of loaded component file paths
+ */
+async load(pathSpec)
+```
+
+**Path Resolution:**
+- `""` → `"components"` → scans `frontend/components/`
+- `"main"` → `"sections/main/components"` → scans `frontend/sections/main/components/`
+
+#### Usage in Sections
+
+```javascript
+// frontend/sections/main/index.js
+import { ComponentManager } from "../../managers/component-manager.js";
+
+export class MainSection extends Section {
+  constructor() {
+    super();
+    
+    // Load main components and section-specific components
+    this.componentManager = this.addManager(
+      new ComponentManager("", "main")
+    );
+    // "" = load main components
+    // "main" = load section-specific components for main section
+  }
+}
+```
+
+#### Component Loading Flow
+
+1. **Section Initialization**: Section creates ComponentManager with path specs
+2. **Manager Initialization**: ComponentManager `init()` is called
+3. **Path Processing**: Each path spec is processed:
+   - Empty string `""` → converts to `"components"`
+   - Section name `"main"` → converts to `"sections/main/components"`
+4. **Backend Request**: Frontend calls backend via IPC to get component file list
+5. **Dynamic Import**: Each component file is dynamically imported
+6. **Registration**: Components register themselves via `customElements.define()`
+7. **Tracking**: Loaded components are tracked to prevent duplicate imports
+
+#### Logging
+
+The ComponentManager uses structured logging with the logger system:
+
+```javascript
+// Main loading message with tag
+[component|manager|import] Importing 2 component(s)...
+
+// Individual component messages without tags (showTag: false)
+* tab-view.js
+* agc-button.js
+
+// Summary message without tag
+* Loaded 2 component(s) from 'components'
+```
 
 ### Component Loading Strategy
 
 **Main Components:**
-- Loaded once at application startup or when main component bundle is imported
+- Loaded automatically when ComponentManager is initialized with `""` path spec
+- Loaded once per section that requests them (tracked to prevent duplicates)
 - Persist throughout the application lifecycle
-- Can be imported in section files or a central component index
+- Available to all sections after loading
 
 **Section-Specific Components:**
-- Loaded when their section is initialized
-- Unloaded when section is deactivated (if needed)
+- Loaded automatically when ComponentManager is initialized with section name
+- Only loaded when their section is active
 - Scoped to section's component directory
-- Imported in section's main index.js file
+- Automatically discovered and imported by ComponentManager
 
 ## Lifecycle Management
 

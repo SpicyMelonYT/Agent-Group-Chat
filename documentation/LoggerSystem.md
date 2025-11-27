@@ -94,8 +94,9 @@ This naming strategy allows patterns like:
 #### Frontend Implementation (Browser)
 - **Location**: `frontend/core/logger.js`
 - **Color Support**: CSS styling for browser console
-- **Features**: Identical API to backend logger
+- **Features**: Identical API to backend logger, including `showTag` support and tag grouping
 - **Usage**: `import { Logger } from "./core/logger.js"`
+- **Global Access**: Available via `window.logger` after section initialization
 
 ### Core Components
 
@@ -235,25 +236,25 @@ logger.log({ tags: "store|data" }, "Loading user data...");
 - **Cross-Component**: Tag changes between different managers/classes are properly separated
 
 #### Tag Visibility Control
-The `showTag` option allows hiding tag brackets for cleaner hierarchical output while maintaining grouping logic:
+The `showTag` option allows hiding tag brackets for cleaner hierarchical output while maintaining grouping logic. This feature is available in both **backend** and **frontend** loggers:
 
 ```javascript
 // Header message with visible tags
 logger.log({
   tags: "app|init",
   color1: "blue",
-  showTag: true  // Shows [app|init] with brackets
+  showTag: true  // Shows [app|init] with brackets (default)
 }, "Initializing managers...");
 
 // Detail messages without tag brackets (visually grouped with bullet points)
 logger.log({
   tags: "app|init",
-  showTag: false  // Shows ○ instead of [app|init]
+  showTag: false  // Shows * message instead of [app|init] message
 }, "Adding StoreManager");
 
 logger.log({
   tags: "app|init",
-  showTag: false  // Shows ○ instead of [app|init]
+  showTag: false  // Shows * message instead of [app|init] message
 }, "Adding WindowManager");
 
 // Output:
@@ -263,6 +264,15 @@ logger.log({
 //
 // [different|tag] Next section starts with visual separation
 ```
+
+**Backend Behavior:**
+- When `showTag: false`, messages are prefixed with `* ` and use plain text (no ANSI colors)
+- Tag grouping still works - blank lines appear between different tag groups
+
+**Frontend Behavior:**
+- When `showTag: false`, messages are prefixed with `* ` and use plain text (no CSS colors)
+- Tag grouping still works - blank lines appear between different tag groups
+- Maintains visual hierarchy with bullet points for sub-items
 
 ### Colored Console Output
 
