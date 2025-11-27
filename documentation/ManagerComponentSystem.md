@@ -742,6 +742,8 @@ async load(pathSpec)
 
 #### Usage in Sections
 
+**IMPORTANT**: Sections should **ALWAYS** load both global components and section-specific components. Global components (like `agc-textarea`, `agc-button`, `agc-tabs`) are used by section-specific components and must be loaded first.
+
 ```javascript
 // frontend/sections/main/index.js
 import { ComponentManager } from "../../managers/component-manager.js";
@@ -750,14 +752,46 @@ export class MainSection extends Section {
   constructor() {
     super();
     
-    // Load main components and section-specific components
+    // ALWAYS load global components first, then section-specific components
     this.componentManager = this.addManager(
       new ComponentManager("", "main")
     );
-    // "" = load main components
+    // "" = load global/main components (agc-textarea, agc-button, etc.)
     // "main" = load section-specific components for main section
   }
 }
+```
+
+**Common Pattern for All Sections:**
+
+```javascript
+// frontend/sections/{section-name}/index.js
+export class {SectionName}Section extends Section {
+  constructor() {
+    super();
+    
+    // Standard pattern: always include "" for global components
+    this.componentManager = this.addManager(
+      new ComponentManager("", "{section-name}")
+    );
+    // "" = global components (required for components like agc-textarea, agc-button)
+    // "{section-name}" = section-specific components
+  }
+}
+```
+
+**Why Both Are Needed:**
+- **Global components** (`""`): Reusable components like `agc-textarea`, `agc-button`, `agc-tabs` that section-specific components depend on
+- **Section-specific components**: Components unique to that section (e.g., `message-bubble` for chat section, `section-card` for main section)
+
+**Common Mistake to Avoid:**
+```javascript
+// ❌ WRONG - Missing global components
+this.componentManager = this.addManager(new ComponentManager("chat"));
+// This will cause section-specific components that use agc-textarea or agc-button to fail
+
+// ✅ CORRECT - Includes both
+this.componentManager = this.addManager(new ComponentManager("", "chat"));
 ```
 
 #### Component Loading Flow
