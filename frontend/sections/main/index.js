@@ -1,6 +1,11 @@
 import { Section } from "../../core/section.js";
-import { MainManager } from "./managers/main-manager.js";
+
+// Core Managers
 import { SectionManager } from "../../managers/section-manager.js";
+import { ComponentManager } from "../../managers/component-manager.js";
+
+// Section Specific Managers
+import { MainManager } from "./managers/main-manager.js";
 
 export class MainSection extends Section {
   constructor() {
@@ -8,6 +13,7 @@ export class MainSection extends Section {
 
     // Add Core Managers
     this.sectionManager = this.addManager(new SectionManager());
+    this.componentManager = this.addManager(new ComponentManager("", "main"));
 
     // Add Section Specific Managers
     this.mainManager = this.addManager(new MainManager());

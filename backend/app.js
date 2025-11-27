@@ -3,6 +3,7 @@ import { App, Logger } from "./core/index.js";
 import { StoreManager } from "./managers/store-manager.js";
 import { WindowManager } from "./managers/window-manager.js";
 import { SectionManager } from "./managers/section-manager.js";
+import { ComponentManager } from "./managers/component-manager.js";
 import { NodeLlamaCppManager } from "./managers/node-llama-cpp-manager.js";
 
 /**
@@ -65,6 +66,16 @@ export class MainApp extends App {
       "Adding SectionManager"
     );
     this.addManager(new SectionManager());
+
+    global.logger.log(
+      {
+        tags: "app|main|manager",
+        color1: "blue",
+        showTag: false,
+      },
+      "Adding ComponentManager"
+    );
+    this.addManager(new ComponentManager());
 
     global.logger.log(
       {
