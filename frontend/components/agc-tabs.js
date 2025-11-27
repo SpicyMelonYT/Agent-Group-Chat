@@ -1,5 +1,5 @@
 /**
- * Tabs Component
+ * Tab View Component
  *
  * A simple tab content manager that shows one child at a time without visible UI elements.
  *
@@ -9,21 +9,21 @@
  * Usage Examples:
  *
  * // Basic usage
- * <revolt-tabs index="0">
+ * <agc-tabs index="0">
  *   <div>Tab 1 Content</div>
  *   <div>Tab 2 Content</div>
  *   <div>Tab 3 Content</div>
- * </revolt-tabs>
+ * </agc-tabs>
  *
  * // Programmatic control
- * const tabs = document.querySelector('revolt-tabs');
- * tabs.setIndex(1); // Switch to second tab
+ * const tabView = document.querySelector('agc-tabs');
+ * tabView.setIndex(1); // Switch to second tab
  *
  * // Event handling
- * tabs.addEventListener('load', (e) => {
+ * tabView.addEventListener('load', (e) => {
  *   console.log('Loaded tab', e.detail.index, e.detail.element);
  * });
- * tabs.addEventListener('unload', (e) => {
+ * tabView.addEventListener('unload', (e) => {
  *   console.log('Unloaded tab', e.detail.index, e.detail.element);
  * });
  *
@@ -42,7 +42,7 @@
  * - load: Fired when a tab becomes active (detail: { index, element })
  * - unload: Fired when a tab becomes inactive (detail: { index, element })
  */
-export class Tabs extends HTMLElement {
+export class TabView extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -205,4 +205,4 @@ export class Tabs extends HTMLElement {
 }
 
 // Register the custom element
-customElements.define("tabs", Tabs);
+customElements.define("agc-tabs", TabView);
