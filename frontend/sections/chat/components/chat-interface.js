@@ -193,16 +193,16 @@ export class ChatInterface extends HTMLElement {
     messageBubble.setAttribute("sender", sender);
     
     if (sender === "assistant") {
-      // For assistant messages, create empty bubble (sections will be added via API)
-      // If content is provided, add it as a response section
+      // For assistant messages, create empty bubble (segments will be added via API)
+      // If content is provided, add it as a response segment
       if (content) {
-        // Wait for component to initialize, then add section
+        // Wait for component to initialize, then add segment
         const addContent = () => {
-          const sectionIndex = messageBubble.addSection("response", timestamp);
-          messageBubble.updateSectionContent(sectionIndex, content);
+          const segmentIndex = messageBubble.addSegment("response", timestamp);
+          messageBubble.updateSegmentContent(segmentIndex, content);
         };
         
-        if (messageBubble.shadowRoot && messageBubble.shadowRoot.querySelector(".sections-container")) {
+        if (messageBubble.shadowRoot && messageBubble.shadowRoot.querySelector(".segments-container")) {
           addContent();
         } else {
           messageBubble.addEventListener("chat-message-ready", addContent, { once: true });

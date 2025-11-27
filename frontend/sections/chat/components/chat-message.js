@@ -2,45 +2,45 @@
  * Chat Message Component
  *
  * A component for displaying individual chat messages. The root element is a container
- * with no styling - it contains individual section bubbles that have backgrounds and borders.
+ * with no styling - it contains individual segment bubbles that have backgrounds and borders.
  *
  * Attributes:
  * - sender: Message sender (e.g., "user", "assistant", "system")
- * - timestamp: Optional timestamp string (for user messages - applied to the section)
+ * - timestamp: Optional timestamp string (for user messages - applied to the segment)
  * - content: Message content text (for user messages)
  *
- * For assistant messages with multiple sections, use the API methods:
- * - addSection(sectionType, timestamp): Add a new section
- * - updateSectionContent(sectionIndex, content): Update content of a section
- * - updateSectionContentByType(sectionType, content): Update content by section type (updates first matching section)
+ * For assistant messages with multiple segments, use the API methods:
+ * - addSegment(segmentType, timestamp): Add a new segment
+ * - updateSegmentContent(segmentIndex, content): Update content of a segment
+ * - updateSegmentContentByType(segmentType, content): Update content by segment type (updates first matching segment)
  *
  * Usage Examples:
  *
  * // Basic user message
  * <chat-message sender="user" content="Hello, how are you?"></chat-message>
  *
- * // Assistant message with streaming sections (programmatic)
+ * // Assistant message with streaming segments (programmatic)
  * const message = document.createElement('chat-message');
  * message.setAttribute('sender', 'assistant');
- * message.addSection('thinking', '12:00 PM');
- * message.updateSectionContent(0, 'Let me think...');
- * message.addSection('response', '12:00 PM');
- * message.updateSectionContent(1, 'Here is my response');
+ * message.addSegment('thinking', '12:00 PM');
+ * message.updateSegmentContent(0, 'Let me think...');
+ * message.addSegment('response', '12:00 PM');
+ * message.updateSegmentContent(1, 'Here is my response');
  *
  * Styling:
  * - Root element has no background/border - just a container
- * - Each section is its own bubble with background/border
- * - User sections: blue background, right-aligned
- * - Assistant sections: gray background, left-aligned
- * - Collapsible sections for thinking, commentary, and function-call
- * - Icons for different section types
+ * - Each segment is its own bubble with background/border
+ * - User segments: blue background, right-aligned
+ * - Assistant segments: gray background, left-aligned
+ * - Collapsible segments for thinking, commentary, and function-call
+ * - Icons for different segment types
  * - Dark mode minimalistic design
  */
 export class ChatMessage extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._sections = []; // Track sections internally
+    this._segments = []; // Track segments internally
     this._isInitialized = false;
   }
 
@@ -83,8 +83,8 @@ export class ChatMessage extends HTMLElement {
     const isSystem = this.sender === "system";
     const isAssistant = this.sender === "assistant";
 
-    // For assistant messages, create structure for multiple sections
-    // For user/system, render simple message with one section
+    // For assistant messages, create structure for multiple segments
+    // For user/system, render simple message with one segment
     if (isAssistant) {
       this.renderAssistantStructure();
     } else {
@@ -101,7 +101,7 @@ export class ChatMessage extends HTMLElement {
         ${this.getStyles(isUser, isSystem)}
       </style>
       <div class="message-wrapper">
-        <div class="sections-container"></div>
+        <div class="segments-container"></div>
       </div>
     `;
   }
@@ -112,25 +112,25 @@ export class ChatMessage extends HTMLElement {
     const content = this.content;
     const timestamp = this.timestamp;
 
-    // For user/system messages, create a single section
-    // We'll use "response" as the section type for user/system messages
-    const sectionType = isSystem ? "system" : "response";
+    // For user/system messages, create a single segment
+    // We'll use "response" as the segment type for user/system messages
+    const segmentType = isSystem ? "system" : "response";
     
     this.shadowRoot.innerHTML = `
       <style>
         ${this.getStyles(isUser, isSystem)}
       </style>
       <div class="message-wrapper">
-        <div class="sections-container"></div>
+        <div class="segments-container"></div>
       </div>
     `;
 
-    // After rendering, add the single section
+    // After rendering, add the single segment
     // Use setTimeout to ensure shadowRoot is ready
     setTimeout(() => {
-      const sectionIndex = this.addSection(sectionType, timestamp);
-      if (sectionIndex >= 0) {
-        this.updateSectionContent(sectionIndex, content);
+      const segmentIndex = this.addSegment(segmentType, timestamp);
+      if (segmentIndex >= 0) {
+        this.updateSegmentContent(segmentIndex, content);
       }
     }, 0);
   }
@@ -150,20 +150,20 @@ export class ChatMessage extends HTMLElement {
           width: 100%;
         }
 
-        .sections-container {
+        .segments-container {
           display: flex;
           flex-direction: column;
           gap: 4px;
           max-width: calc(100% - 300px);
         }
 
-        .section-wrapper {
+        .segment-wrapper {
           display: flex;
           flex-direction: column;
           align-items: ${isUser ? "flex-end" : "flex-start"};
         }
 
-        .section {
+        .segment {
           display: flex;
           flex-direction: column;
           padding: 8px 12px;
@@ -175,14 +175,14 @@ export class ChatMessage extends HTMLElement {
           min-width: fit-content;
         }
 
-        .section.user,
-        .section.response {
+        .segment.user,
+        .segment.response {
           background-color: var(--message-user-bg, #2a5c8f);
           color: var(--message-user-text, #e0e0e0);
           border-bottom-right-radius: 4px;
         }
 
-        .section.assistant {
+        .segment.assistant {
           background-color: var(--message-assistant-bg, #2a2a2a);
           color: var(--message-assistant-text, #e0e0e0);
           border: 1px solid var(--message-assistant-border, #353535);
@@ -190,7 +190,7 @@ export class ChatMessage extends HTMLElement {
           padding: 8px;
         }
 
-        .section.system {
+        .segment.system {
           background-color: var(--message-system-bg, #1a1a1a);
           color: var(--message-system-text, #888888);
           border: 1px solid var(--message-system-border, #2a2a2a);
@@ -200,7 +200,7 @@ export class ChatMessage extends HTMLElement {
           font-style: italic;
         }
 
-        .section-header {
+        .segment-header {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -211,58 +211,58 @@ export class ChatMessage extends HTMLElement {
           min-width: fit-content;
         }
 
-        .section-header:not(.collapsed) {
+        .segment-header:not(.collapsed) {
           margin-bottom: 10px;
         }
 
-        .section-header.collapsed {
+        .segment-header.collapsed {
           margin-bottom: 0;
         }
 
-        .section-icon {
+        .segment-icon {
           font-size: 16px;
         }
 
-        .section-label {
+        .segment-label {
           font-size: 12px;
           font-weight: 600;
-          color: var(--message-section-label-color, #b0b0b0);
+          color: var(--message-segment-label-color, #b0b0b0);
           white-space: nowrap;
         }
 
         .collapse-indicator {
           margin-left: auto;
           font-size: 12px;
-          color: var(--message-section-label-color, #888888);
+          color: var(--message-segment-label-color, #888888);
           transition: transform 0.2s ease;
         }
 
-        .section-header.collapsed .collapse-indicator {
+        .segment-header.collapsed .collapse-indicator {
           transform: rotate(-90deg);
         }
 
-        .section-content {
+        .segment-content {
           margin: 0;
           font-size: 14px;
           line-height: 1.3;
           white-space: normal;
         }
 
-        .section-content.collapsed {
+        .segment-content.collapsed {
           display: none;
         }
 
-        /* Styling for content inside collapsible sections */
-        .section[data-section-type="thinking"] .section-content:not(.collapsed),
-        .section[data-section-type="commentary"] .section-content:not(.collapsed),
-        .section[data-section-type="function-call"] .section-content:not(.collapsed) {
+        /* Styling for content inside collapsible segments */
+        .segment[data-segment-type="thinking"] .segment-content:not(.collapsed),
+        .segment[data-segment-type="commentary"] .segment-content:not(.collapsed),
+        .segment[data-segment-type="function-call"] .segment-content:not(.collapsed) {
           background-color: rgba(0, 0, 0, 0.35);
           padding: 8px 10px;
           border-radius: 4px;
           opacity: 0.8;
         }
 
-        .section-timestamp {
+        .segment-timestamp {
           font-size: 11px;
           color: var(--message-timestamp-color, #666666);
           margin-top: 2px;
@@ -272,8 +272,8 @@ export class ChatMessage extends HTMLElement {
       `;
   }
 
-  getIcon(sectionType) {
-    switch (sectionType) {
+  getIcon(segmentType) {
+    switch (segmentType) {
       case "thinking":
         return "💭";
       case "commentary":
@@ -285,8 +285,8 @@ export class ChatMessage extends HTMLElement {
     }
   }
 
-  getSectionLabel(sectionType) {
-    switch (sectionType) {
+  getSegmentLabel(segmentType) {
+    switch (segmentType) {
       case "thinking":
         return "Thinking";
       case "commentary":
@@ -302,55 +302,55 @@ export class ChatMessage extends HTMLElement {
     }
   }
 
-  isCollapsible(sectionType) {
-    return ["thinking", "commentary", "function-call"].includes(sectionType);
+  isCollapsible(segmentType) {
+    return ["thinking", "commentary", "function-call"].includes(segmentType);
   }
 
   /**
-   * Add a new section to a message
-   * @param {string} sectionType - Type of section ("thinking", "commentary", "function-call", "response", "system", "user")
+   * Add a new segment to a message
+   * @param {string} segmentType - Type of segment ("thinking", "commentary", "function-call", "response", "system", "user")
    * @param {string} timestamp - Optional timestamp string
-   * @returns {number} Index of the newly added section
+   * @returns {number} Index of the newly added segment
    */
-  addSection(sectionType, timestamp = "") {
-    const sectionsContainer = this.shadowRoot?.querySelector(".sections-container");
-    if (!sectionsContainer) {
-      console.error("Sections container not found. Component may not be initialized.");
+  addSegment(segmentType, timestamp = "") {
+    const segmentsContainer = this.shadowRoot?.querySelector(".segments-container");
+    if (!segmentsContainer) {
+      console.error("Segments container not found. Component may not be initialized.");
       return -1;
     }
 
-    const sectionIndex = this._sections.length;
-    const isCollapsible = this.isCollapsible(sectionType);
-    const icon = this.getIcon(sectionType);
-    const sectionLabel = this.getSectionLabel(sectionType);
+    const segmentIndex = this._segments.length;
+    const isCollapsible = this.isCollapsible(segmentType);
+    const icon = this.getIcon(segmentType);
+    const segmentLabel = this.getSegmentLabel(segmentType);
 
-    // Determine the CSS class for styling based on sender and section type
-    let sectionClass = sectionType;
-    // For user messages, use "user" class; for assistant, use section type or "assistant"
-    if (this.sender === "user" && sectionType === "response") {
-      sectionClass = "user";
+    // Determine the CSS class for styling based on sender and segment type
+    let segmentClass = segmentType;
+    // For user messages, use "user" class; for assistant, use segment type or "assistant"
+    if (this.sender === "user" && segmentType === "response") {
+      segmentClass = "user";
     } else if (this.sender === "assistant") {
-      sectionClass = "assistant";
+      segmentClass = "assistant";
     }
 
-    // Create section wrapper to contain section and timestamp
-    const sectionWrapper = document.createElement("div");
-    sectionWrapper.className = "section-wrapper";
+    // Create segment wrapper to contain segment and timestamp
+    const segmentWrapper = document.createElement("div");
+    segmentWrapper.className = "segment-wrapper";
 
-    // Create section element
-    const section = document.createElement("div");
-    section.className = `section ${sectionClass}`;
-    section.setAttribute("data-section-type", sectionType);
-    section.setAttribute("data-section-index", sectionIndex.toString());
+    // Create segment element
+    const segment = document.createElement("div");
+    segment.className = `segment ${segmentClass}`;
+    segment.setAttribute("data-segment-type", segmentType);
+    segment.setAttribute("data-segment-index", segmentIndex.toString());
 
-    // Create section content
-    const sectionContent = document.createElement("div");
-    sectionContent.className = `section-content ${isCollapsible ? "collapsed" : ""}`;
-    sectionContent.textContent = ""; // Start empty for streaming
+    // Create segment content
+    const segmentContent = document.createElement("div");
+    segmentContent.className = `segment-content ${isCollapsible ? "collapsed" : ""}`;
+    segmentContent.textContent = ""; // Start empty for streaming
 
-    // Create timestamp element (outside the section bubble)
+    // Create timestamp element (outside the segment bubble)
     const timestampEl = document.createElement("div");
-    timestampEl.className = "section-timestamp";
+    timestampEl.className = "segment-timestamp";
     timestampEl.textContent = timestamp || "";
     if (!timestamp) {
       timestampEl.style.display = "none";
@@ -359,10 +359,10 @@ export class ChatMessage extends HTMLElement {
     // If collapsible, add header
     if (isCollapsible) {
       const header = document.createElement("div");
-      header.className = "section-header collapsed";
+      header.className = "segment-header collapsed";
       header.innerHTML = `
-        <span class="section-icon">${icon}</span>
-        <span class="section-label">${sectionLabel}</span>
+        <span class="segment-icon">${icon}</span>
+        <span class="segment-label">${segmentLabel}</span>
         <span class="collapse-indicator">▼</span>
       `;
 
@@ -371,100 +371,100 @@ export class ChatMessage extends HTMLElement {
         const isCollapsed = header.classList.contains("collapsed");
         if (isCollapsed) {
           header.classList.remove("collapsed");
-          sectionContent.classList.remove("collapsed");
+          segmentContent.classList.remove("collapsed");
         } else {
           header.classList.add("collapsed");
-          sectionContent.classList.add("collapsed");
+          segmentContent.classList.add("collapsed");
         }
       };
       header.addEventListener("click", toggleHandler);
 
-      section.appendChild(header);
+      segment.appendChild(header);
     }
 
-    section.appendChild(sectionContent);
+    segment.appendChild(segmentContent);
     
-    // Add section and timestamp to wrapper (timestamp outside the bubble)
-    sectionWrapper.appendChild(section);
-    sectionWrapper.appendChild(timestampEl);
+    // Add segment and timestamp to wrapper (timestamp outside the bubble)
+    segmentWrapper.appendChild(segment);
+    segmentWrapper.appendChild(timestampEl);
 
-    sectionsContainer.appendChild(sectionWrapper);
+    segmentsContainer.appendChild(segmentWrapper);
 
-    // Store section data
-    this._sections.push({
-      type: sectionType,
+    // Store segment data
+    this._segments.push({
+      type: segmentType,
       timestamp: timestamp,
-      element: section,
-      wrapperElement: sectionWrapper,
-      contentElement: sectionContent,
+      element: segment,
+      wrapperElement: segmentWrapper,
+      contentElement: segmentContent,
       timestampElement: timestampEl,
-      headerElement: isCollapsible ? section.querySelector(".section-header") : null,
+      headerElement: isCollapsible ? segment.querySelector(".segment-header") : null,
     });
 
-    return sectionIndex;
+    return segmentIndex;
   }
 
   /**
-   * Update the content of a section by index
-   * @param {number} sectionIndex - Index of the section to update
+   * Update the content of a segment by index
+   * @param {number} segmentIndex - Index of the segment to update
    * @param {string} content - New content text
    */
-  updateSectionContent(sectionIndex, content) {
-    if (sectionIndex < 0 || sectionIndex >= this._sections.length) {
-      console.warn(`Section index ${sectionIndex} is out of range`);
+  updateSegmentContent(segmentIndex, content) {
+    if (segmentIndex < 0 || segmentIndex >= this._segments.length) {
+      console.warn(`Segment index ${segmentIndex} is out of range`);
       return;
     }
 
-    const section = this._sections[sectionIndex];
-    if (section && section.contentElement) {
-      section.contentElement.textContent = content;
+    const segment = this._segments[segmentIndex];
+    if (segment && segment.contentElement) {
+      segment.contentElement.textContent = content;
     }
   }
 
   /**
-   * Update the content of a section by type (updates first matching section)
-   * @param {string} sectionType - Type of section to update
+   * Update the content of a segment by type (updates first matching segment)
+   * @param {string} segmentType - Type of segment to update
    * @param {string} content - New content text
-   * @returns {boolean} True if section was found and updated
+   * @returns {boolean} True if segment was found and updated
    */
-  updateSectionContentByType(sectionType, content) {
-    const sectionIndex = this._sections.findIndex((s) => s.type === sectionType);
-    if (sectionIndex === -1) {
+  updateSegmentContentByType(segmentType, content) {
+    const segmentIndex = this._segments.findIndex((s) => s.type === segmentType);
+    if (segmentIndex === -1) {
       return false;
     }
-    this.updateSectionContent(sectionIndex, content);
+    this.updateSegmentContent(segmentIndex, content);
     return true;
   }
 
   /**
-   * Append content to a section (useful for streaming)
-   * @param {number} sectionIndex - Index of the section
+   * Append content to a segment (useful for streaming)
+   * @param {number} segmentIndex - Index of the segment
    * @param {string} additionalContent - Content to append
    */
-  appendSectionContent(sectionIndex, additionalContent) {
-    if (sectionIndex < 0 || sectionIndex >= this._sections.length) {
-      console.warn(`Section index ${sectionIndex} is out of range`);
+  appendSegmentContent(segmentIndex, additionalContent) {
+    if (segmentIndex < 0 || segmentIndex >= this._segments.length) {
+      console.warn(`Segment index ${segmentIndex} is out of range`);
       return;
     }
 
-    const section = this._sections[sectionIndex];
-    if (section && section.contentElement) {
-      section.contentElement.textContent += additionalContent;
+    const segment = this._segments[segmentIndex];
+    if (segment && segment.contentElement) {
+      segment.contentElement.textContent += additionalContent;
     }
   }
 
   /**
-   * Append content to a section by type
-   * @param {string} sectionType - Type of section
+   * Append content to a segment by type
+   * @param {string} segmentType - Type of segment
    * @param {string} additionalContent - Content to append
-   * @returns {boolean} True if section was found and updated
+   * @returns {boolean} True if segment was found and updated
    */
-  appendSectionContentByType(sectionType, additionalContent) {
-    const sectionIndex = this._sections.findIndex((s) => s.type === sectionType);
-    if (sectionIndex === -1) {
+  appendSegmentContentByType(segmentType, additionalContent) {
+    const segmentIndex = this._segments.findIndex((s) => s.type === segmentType);
+    if (segmentIndex === -1) {
       return false;
     }
-    this.appendSectionContent(sectionIndex, additionalContent);
+    this.appendSegmentContent(segmentIndex, additionalContent);
     return true;
   }
 }
