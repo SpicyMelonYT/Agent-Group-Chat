@@ -4,6 +4,7 @@ export class Logger {
   constructor() {
     this.tagPattern = null;
     this._tagEvaluator = null;
+    this._lastDisplayedTag = null; // Track last displayed tag for grouping
   }
 
   setTagPattern(pattern) {
@@ -44,13 +45,18 @@ export class Logger {
       console.warn('[Logger] Settings parameter should be an object. Received:', typeof settings, settings);
     }
 
-    const { tags, label, colors, includeSource, sourceDepth, sourcePosition } = this._normalizeTags(settings);
+    const { tags, label, colors, includeSource, sourceDepth, sourcePosition, showTag } = this._normalizeTags(settings);
     if (!this._shouldLog(tags)) {
       return;
     }
 
     // Filter displayed tags to only show those that match the current pattern (if any)
     const displayLabel = this._getDisplayLabel(tags);
+
+    // Add newline for tag grouping if this tag is different from the last one AND we're showing tags
+    if (showTag && this._lastDisplayedTag !== null && this._lastDisplayedTag !== displayLabel) {
+      fn(""); // Print empty line to create visual separation
+    }
 
     const callerInfo = includeSource ? this._getCallerInfo(sourceDepth) : null;
 
@@ -66,15 +72,23 @@ export class Logger {
         styles.push(''); // Reset
       }
 
-      formatString += `%c[${displayLabel}]%c`;
-      styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
-      styles.push(`color: ${colors.color2}`); // Reset for space after tag
+      // Apply color1 to tags if specified and showTag is true, otherwise use default
+      if (showTag) {
+        formatString += `%c[${displayLabel}]%c`;
+        styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
+        styles.push(`color: ${colors.color2}`); // Reset for space after tag
+      }
 
-      // Add styles for each message part
+      // Add messages with color2 if specified, otherwise use default
       messages.forEach((msg) => {
-        formatString += ` %c${msg}%c`;
-        styles.push(`color: ${colors.color2}`); // Message color
-        styles.push(''); // Reset
+        if (showTag) {
+          formatString += ` %c${msg}%c`;
+          styles.push(`color: ${colors.color2}`); // Message color
+          styles.push(''); // Reset
+        } else {
+          // When not showing tags, use plain text with bullet (no colors)
+          formatString += ` * ${msg}`;
+        }
       });
 
       // Add source info at end (default) if present
@@ -89,16 +103,37 @@ export class Logger {
       // No colors specified, use default
       const args = [];
       if (callerInfo && sourcePosition === "start") {
-        args.push(callerInfo, `[${displayLabel}]`);
+        args.push(callerInfo);
+        if (showTag) {
+          args.push(`[${displayLabel}]`);
+        }
       } else {
-        args.push(`[${displayLabel}]`);
+        if (showTag) {
+          args.push(`[${displayLabel}]`);
+        }
       }
-      args.push(...messages);
+
+      // Add messages with appropriate separator
+      if (showTag) {
+        args.push(...messages);
+      } else {
+        // When not showing tags, use plain text with bullet
+        if (messages.length > 0) {
+          args.push(`* ${messages[0]}`);
+          // Add remaining messages as separate args
+          for (let i = 1; i < messages.length; i++) {
+            args.push(messages[i]);
+          }
+        }
+      }
       if (callerInfo && sourcePosition === "end") {
         args.push(callerInfo);
       }
       fn(...args);
     }
+
+    // Update last displayed tag for grouping
+    this._lastDisplayedTag = displayLabel;
   }
 
   _shouldLog(tags) {
@@ -137,6 +172,7 @@ export class Logger {
     let includeSource = false;
     let sourceDepth = 0;
     let sourcePosition = "end";
+    let showTag = true; // Default to showing tags
 
     // Handle object input with tag and color properties
     if (tagInput && typeof tagInput === 'object' && !Array.isArray(tagInput) && !(tagInput instanceof Set)) {
@@ -181,6 +217,11 @@ export class Logger {
         sourcePosition = pos === "start" ? "start" : "end";
       }
 
+      // Extract show tag setting
+      if (tagInput.showTag !== undefined) {
+        showTag = Boolean(tagInput.showTag);
+      }
+
       label = tags.size > 0 ? Array.from(tags).join("|") : "untagged";
     }
     // Handle legacy Set input
@@ -204,7 +245,7 @@ export class Logger {
       label = tagArray.length > 0 ? tagArray.join("|") : String(tagInput ?? "").trim() || "untagged";
     }
 
-    return { tags, label, colors, includeSource, sourceDepth, sourcePosition };
+    return { tags, label, colors, includeSource, sourceDepth, sourcePosition, showTag };
   }
 
   _compilePattern(pattern) {
