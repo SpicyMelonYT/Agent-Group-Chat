@@ -74,17 +74,17 @@ export class Logger {
 
       // Apply color1 to tags if specified and showTag is true, otherwise use default
       if (showTag) {
-        formatString += `%c[${displayLabel}]%c`;
-        styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
-        styles.push(`color: ${colors.color2}`); // Reset for space after tag
+      formatString += `%c[${displayLabel}]%c`;
+      styles.push(`color: ${colors.color1}`); // Tag opening bracket and label
+      styles.push(`color: ${colors.color2}`); // Reset for space after tag
       }
 
       // Add messages with color2 if specified, otherwise use default
       messages.forEach((msg) => {
         if (showTag) {
-          formatString += ` %c${msg}%c`;
-          styles.push(`color: ${colors.color2}`); // Message color
-          styles.push(''); // Reset
+        formatString += ` %c${msg}%c`;
+        styles.push(`color: ${colors.color2}`); // Message color
+        styles.push(''); // Reset
         } else {
           // When not showing tags, use plain text with bullet (no colors)
           formatString += ` * ${msg}`;
@@ -109,13 +109,13 @@ export class Logger {
         }
       } else {
         if (showTag) {
-          args.push(`[${displayLabel}]`);
+        args.push(`[${displayLabel}]`);
         }
       }
 
       // Add messages with appropriate separator
       if (showTag) {
-        args.push(...messages);
+      args.push(...messages);
       } else {
         // When not showing tags, use plain text with bullet
         if (messages.length > 0) {
