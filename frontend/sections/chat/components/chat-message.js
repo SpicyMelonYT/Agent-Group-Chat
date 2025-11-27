@@ -154,6 +154,7 @@ export class ChatMessage extends HTMLElement {
           display: flex;
           flex-direction: column;
           gap: 4px;
+          max-width: calc(100% - 300px);
         }
 
         .section-wrapper {
@@ -266,6 +267,7 @@ export class ChatMessage extends HTMLElement {
           color: var(--message-timestamp-color, #666666);
           margin-top: 2px;
           padding: 0 4px;
+          white-space: nowrap;
         }
       `;
   }
