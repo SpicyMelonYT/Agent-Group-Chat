@@ -306,17 +306,34 @@ export class ChatMessage extends HTMLElement {
           flex-shrink: 0;
         }
 
+        .code-block-copy-middleman {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: calc(100% - 40px);
+          pointer-events: none;
+          overflow: visible;
+        }
+
         .code-block-copy-row {
           position: sticky;
-          top: 6px;
+          top: 0px;
           z-index: 3;
           display: flex;
           justify-content: flex-end;
-          padding: 6px 10px 0;
+          padding: 0 10px;
+          margin-top: 27px;
           pointer-events: none;
+          height: 0;
+          overflow: visible;
         }
 
         .code-block-copy-button {
+          position: absolute;
+          top: 0;
+          right: 10px;
+          margin-top: 10px;
           background: rgba(0, 0, 0, 0.45);
           backdrop-filter: blur(4px);
           border: none;
@@ -339,9 +356,11 @@ export class ChatMessage extends HTMLElement {
 
         .code-block-panel pre {
           margin: 0;
+          margin-top: 0;
           padding: 10px;
           overflow-x: auto;
           background-color: transparent;
+          position: relative;
         }
 
         .code-block-panel code {
@@ -353,9 +372,9 @@ export class ChatMessage extends HTMLElement {
         /* Function call segments - code blocks without panel */
         .segment[data-segment-type="function-call"] .segment-content pre {
           margin: 0;
-          padding: 8px 10px;
-          background-color: rgba(0, 0, 0, 0.2);
-          border-radius: 4px;
+          padding: 0;
+          background-color: transparent;
+          border-radius: 0;
           overflow-x: auto;
         }
 
@@ -712,10 +731,15 @@ export class ChatMessage extends HTMLElement {
       copyRow.className = "code-block-copy-row";
       copyRow.appendChild(copyButton);
 
+      // Middleman wrapper (30px shorter than parent)
+      const copyMiddleman = document.createElement("div");
+      copyMiddleman.className = "code-block-copy-middleman";
+      copyMiddleman.appendChild(copyRow);
+
       // Wrap pre element
       preElement.parentNode.insertBefore(panel, preElement);
       panel.appendChild(header);
-      panel.appendChild(copyRow);
+      panel.appendChild(copyMiddleman);
       panel.appendChild(preElement);
     });
   }
