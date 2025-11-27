@@ -87,10 +87,24 @@ export class MarkdownManager extends Manager {
       const { marked } = markedModule;
       const DOMPurify = DOMPurifyModule.default || DOMPurifyModule;
       
+      // Configure custom renderer to add data-language attributes to code blocks
+      const renderer = new marked.Renderer();
+      renderer.code = (code, infostring = "", escaped) => {
+        const languageRaw = (infostring || "").trim();
+        const languageLower = languageRaw.toLowerCase();
+        const languageClass = languageLower ? `language-${languageLower}` : "";
+        const dataLanguageAttr = languageRaw
+          ? ` data-language="${languageRaw.toUpperCase()}"`
+          : "";
+        const escapedCode = this._escapeHtml(code);
+        return `<pre class="${languageClass}"><code class="${languageClass}"${dataLanguageAttr}>${escapedCode}</code></pre>`;
+      };
+
       // Configure marked options
       marked.setOptions({
         breaks: true, // Convert line breaks to <br>
         gfm: true, // GitHub Flavored Markdown
+        renderer,
       });
       
       this._marked = marked;

@@ -277,6 +277,94 @@ export class ChatMessage extends HTMLElement {
           opacity: 0.8;
         }
 
+        /* Code block panel styling (for non-function-call segments) */
+        .code-block-panel {
+          position: relative;
+          background-color: rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          margin: 8px 0;
+          overflow: visible;
+        }
+
+        .code-block-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 10px;
+          background-color: rgba(0, 0, 0, 0.25);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          gap: 10px;
+        }
+
+        .code-block-language {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--code-block-language-color, #b0b0b0);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          flex-shrink: 0;
+        }
+
+        .code-block-copy-row {
+          position: sticky;
+          top: 6px;
+          z-index: 3;
+          display: flex;
+          justify-content: flex-end;
+          padding: 6px 10px 0;
+          pointer-events: none;
+        }
+
+        .code-block-copy-button {
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(4px);
+          border: none;
+          color: var(--code-block-copy-color, #b0b0b0);
+          font-size: 11px;
+          cursor: pointer;
+          padding: 4px 10px;
+          border-radius: 4px;
+          transition: background-color 0.2s ease, color 0.2s ease;
+          pointer-events: auto;
+        }
+
+        .code-block-copy-button:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .code-block-copy-button:active {
+          background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .code-block-panel pre {
+          margin: 0;
+          padding: 10px;
+          overflow-x: auto;
+          background-color: transparent;
+        }
+
+        .code-block-panel code {
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        /* Function call segments - code blocks without panel */
+        .segment[data-segment-type="function-call"] .segment-content pre {
+          margin: 0;
+          padding: 8px 10px;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: 4px;
+          overflow-x: auto;
+        }
+
+        .segment[data-segment-type="function-call"] .segment-content code {
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
         .segment-timestamp {
           font-size: 11px;
           color: var(--message-timestamp-color, #666666);
@@ -441,6 +529,10 @@ export class ChatMessage extends HTMLElement {
         const html = window.markdownManager.parse(segment.rawContent);
         segment.contentElement.innerHTML = html;
         this._trimSegmentSpacing(segment.contentElement);
+        // Process code blocks (add panels for non-function-call segments)
+        if (segment.type !== "function-call") {
+          this._processCodeBlocks(segment.contentElement);
+        }
       } else {
         // Fallback to plain text if markdown manager not available
         segment.contentElement.textContent = segment.rawContent;
@@ -484,6 +576,10 @@ export class ChatMessage extends HTMLElement {
         const html = window.markdownManager.parse(segment.rawContent);
         segment.contentElement.innerHTML = html;
         this._trimSegmentSpacing(segment.contentElement);
+        // Process code blocks (add panels for non-function-call segments)
+        if (segment.type !== "function-call") {
+          this._processCodeBlocks(segment.contentElement);
+        }
       } else {
         // Fallback to plain text if markdown manager not available
         segment.contentElement.textContent = segment.rawContent;
@@ -525,6 +621,103 @@ export class ChatMessage extends HTMLElement {
     if (lastElement) {
       lastElement.style.marginBottom = "0px";
     }
+  }
+
+  /**
+   * Process code blocks in segment content - wrap them in panels with headers and copy buttons
+   * Only processes code blocks in non-function-call segments
+   * @param {HTMLElement} container - The segment content container
+   */
+  _processCodeBlocks(container) {
+    if (!container) return;
+
+    // Find all pre > code blocks (standard markdown code block structure)
+    const codeBlocks = container.querySelectorAll("pre > code");
+    
+    codeBlocks.forEach((codeElement) => {
+      const preElement = codeElement.parentElement;
+      
+      // Skip if already processed (has code-block-panel parent)
+      if (preElement.closest(".code-block-panel")) {
+        return;
+      }
+
+      // Get language from data attribute or class (added by markdown renderer)
+      let language = codeElement.getAttribute("data-language") || "";
+      if (!language) {
+        for (const className of codeElement.classList) {
+          if (className.startsWith("language-")) {
+            language = className.replace("language-", "").toUpperCase();
+            break;
+          }
+        }
+      }
+      if (!language) {
+        for (const className of preElement.classList) {
+          if (className.startsWith("language-")) {
+            language = className.replace("language-", "").toUpperCase();
+            break;
+          }
+        }
+      }
+
+      // Create panel wrapper
+      const panel = document.createElement("div");
+      panel.className = "code-block-panel";
+
+      // Create header
+      const header = document.createElement("div");
+      header.className = "code-block-header";
+
+      // Create language label (always show, even if empty)
+      const languageLabel = document.createElement("span");
+      languageLabel.className = "code-block-language";
+      languageLabel.textContent = language || "CODE";
+      header.appendChild(languageLabel);
+
+      // Create copy button
+      const copyButton = document.createElement("button");
+      copyButton.className = "code-block-copy-button";
+      copyButton.textContent = "Copy";
+      copyButton.setAttribute("aria-label", "Copy code to clipboard");
+      
+      // Copy functionality
+      copyButton.addEventListener("click", async () => {
+        try {
+          const codeText = codeElement.textContent;
+          await navigator.clipboard.writeText(codeText);
+          
+          // Visual feedback
+          const originalText = copyButton.textContent;
+          copyButton.textContent = "Copied!";
+          copyButton.style.color = "var(--code-block-copy-success-color, #4caf50)";
+          
+          setTimeout(() => {
+            copyButton.textContent = originalText;
+            copyButton.style.color = "";
+          }, 2000);
+        } catch (error) {
+          window.logger?.error(
+            {
+              tags: "chat-message|code-block|copy|error",
+              color1: "red",
+            },
+            `Failed to copy code: ${error.message}`
+          );
+        }
+      });
+
+      // Copy button row (sticky)
+      const copyRow = document.createElement("div");
+      copyRow.className = "code-block-copy-row";
+      copyRow.appendChild(copyButton);
+
+      // Wrap pre element
+      preElement.parentNode.insertBefore(panel, preElement);
+      panel.appendChild(header);
+      panel.appendChild(copyRow);
+      panel.appendChild(preElement);
+    });
   }
 
   /**
