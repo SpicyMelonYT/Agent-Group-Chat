@@ -399,6 +399,7 @@ export class ChatMessage extends HTMLElement {
       contentElement: segmentContent,
       timestampElement: timestampEl,
       headerElement: isCollapsible ? segment.querySelector(".segment-header") : null,
+      rawContent: "", // Store raw markdown content for streaming
     });
 
     return segmentIndex;
@@ -407,7 +408,7 @@ export class ChatMessage extends HTMLElement {
   /**
    * Update the content of a segment by index
    * @param {number} segmentIndex - Index of the segment to update
-   * @param {string} content - New content text
+   * @param {string} content - New content text (markdown will be parsed)
    */
   updateSegmentContent(segmentIndex, content) {
     if (segmentIndex < 0 || segmentIndex >= this._segments.length) {
@@ -417,7 +418,17 @@ export class ChatMessage extends HTMLElement {
 
     const segment = this._segments[segmentIndex];
     if (segment && segment.contentElement) {
-      segment.contentElement.textContent = content;
+      // Store raw content for streaming support
+      segment.rawContent = content || "";
+      
+      // Parse markdown if markdown manager is available
+      if (window.markdownManager) {
+        const html = window.markdownManager.parse(segment.rawContent);
+        segment.contentElement.innerHTML = html;
+      } else {
+        // Fallback to plain text if markdown manager not available
+        segment.contentElement.textContent = segment.rawContent;
+      }
     }
   }
 
@@ -439,7 +450,7 @@ export class ChatMessage extends HTMLElement {
   /**
    * Append content to a segment (useful for streaming)
    * @param {number} segmentIndex - Index of the segment
-   * @param {string} additionalContent - Content to append
+   * @param {string} additionalContent - Content to append (markdown will be parsed)
    */
   appendSegmentContent(segmentIndex, additionalContent) {
     if (segmentIndex < 0 || segmentIndex >= this._segments.length) {
@@ -449,7 +460,17 @@ export class ChatMessage extends HTMLElement {
 
     const segment = this._segments[segmentIndex];
     if (segment && segment.contentElement) {
-      segment.contentElement.textContent += additionalContent;
+      // Append to raw content and re-parse (necessary for proper markdown parsing)
+      segment.rawContent = (segment.rawContent || "") + additionalContent;
+      
+      // Parse markdown if markdown manager is available
+      if (window.markdownManager) {
+        const html = window.markdownManager.parse(segment.rawContent);
+        segment.contentElement.innerHTML = html;
+      } else {
+        // Fallback to plain text if markdown manager not available
+        segment.contentElement.textContent = segment.rawContent;
+      }
     }
   }
 
