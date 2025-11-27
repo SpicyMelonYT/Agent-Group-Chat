@@ -2,7 +2,7 @@
 import { Logger } from "./core/logger.js";
 global.logger = new Logger();
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
@@ -119,6 +119,9 @@ if (process.argv.includes("--dev")) {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
+  // Remove the default application menu bar (File, Edit, View, etc.)
+  Menu.setApplicationMenu(null);
+
   // Initialize managers before creating the window
   await mainApp.init();
 
