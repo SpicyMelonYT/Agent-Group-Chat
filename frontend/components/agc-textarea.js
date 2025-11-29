@@ -76,7 +76,7 @@
  * - change: Fired on every input change (more frequent than native change)
  * - open: Fired on focus
  * - close: Fired on blur
- * - submit: Fired when Ctrl+Enter or Cmd+Enter is pressed
+ * - submit: Fired when Enter is pressed (Shift+Enter creates new line)
  */
 export class AGCTextarea extends HTMLElement {
   constructor() {
@@ -601,9 +601,11 @@ export class AGCTextarea extends HTMLElement {
       );
     });
 
-    // Handle submit on Ctrl+Enter or Cmd+Enter
+    // Handle submit on Enter (without Shift), and allow Shift+Enter for new lines
     textarea.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      if (e.key === "Enter" && !e.shiftKey) {
+        // Enter alone submits the message
+        e.preventDefault(); // Prevent default new line behavior
         this.dispatchEvent(
           new CustomEvent("submit", {
             bubbles: true,
@@ -612,6 +614,7 @@ export class AGCTextarea extends HTMLElement {
           })
         );
       }
+      // Shift+Enter will create a new line (default behavior, no prevention needed)
     });
   }
 
