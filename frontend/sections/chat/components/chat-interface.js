@@ -68,8 +68,8 @@ export class ChatInterface extends HTMLElement {
 
         .input-container {
           display: flex;
-          gap: 12px;
-          padding: 16px 20px;
+          gap: 15px;
+          padding: 15px;
           border-top: 1px solid var(--border-color, #2a2a2a);
           background-color: var(--input-container-bg, #1a1a1a);
         }
@@ -111,7 +111,7 @@ export class ChatInterface extends HTMLElement {
               placeholder="Type your message..."
               rows="1"
               minrows="1"
-              maxrows="5"
+              maxrows="9"
               color1="hsl(0, 0%, 12%)"
               radius="normal"
             ></agc-textarea>
