@@ -10,8 +10,8 @@
  *
  * // Event handling
  * const chatInterface = document.querySelector('chat-interface');
- * chatInterface.addEventListener('message-send', (e) => {
- *   console.log('Message to send:', e.detail.message);
+ * chatInterface.addEventListener('send-message', (e) => {
+ *   console.log('Message to send:', e.detail.inputValue);
  * });
  *
  * chatInterface.addEventListener('message-change', (e) => {
@@ -25,9 +25,10 @@
  * - setInputValue(value): Set the input textarea value
  * - getInputValue(): Get the current input value
  * - focusInput(): Focus the input textarea
+ * - clearInput(): Clear the input textarea
  *
  * Events:
- * - message-send: Fired when send button is clicked or Ctrl+Enter is pressed (detail: { message })
+ * - send-message: Fired when send button is clicked or Ctrl+Enter is pressed (detail: { inputValue })
  * - message-change: Fired when textarea value changes (detail: { value })
  */
 export class ChatInterface extends HTMLElement {
@@ -145,38 +146,28 @@ export class ChatInterface extends HTMLElement {
 
     // Listen for textarea submit events (Ctrl+Enter)
     textarea.addEventListener("submit", (e) => {
-      const message = e.detail.value.trim();
-      if (message) {
-        this.dispatchEvent(
-          new CustomEvent("message-send", {
-            bubbles: false,
-            composed: false,
-            detail: {
-              message: message,
-            },
-          })
-        );
-        // Clear input after sending
-        textarea.setValue("");
-      }
+      this.dispatchEvent(
+        new CustomEvent("send-message", {
+          bubbles: false,
+          composed: false,
+          detail: {
+            inputValue: e.detail.value,
+          },
+        })
+      );
     });
 
     // Listen for send button clicks
     sendButton.addEventListener("click", () => {
-      const message = textarea.getValue().trim();
-      if (message) {
-        this.dispatchEvent(
-          new CustomEvent("message-send", {
-            bubbles: false,
-            composed: false,
-            detail: {
-              message: message,
-            },
-          })
-        );
-        // Clear input after sending
-        textarea.setValue("");
-      }
+      this.dispatchEvent(
+        new CustomEvent("send-message", {
+          bubbles: false,
+          composed: false,
+          detail: {
+            inputValue: textarea.getValue(),
+          },
+        })
+      );
     });
   }
 
@@ -263,6 +254,13 @@ export class ChatInterface extends HTMLElement {
     const textarea = this.shadowRoot.querySelector("#chat-input");
     if (textarea) {
       textarea.focus();
+    }
+  }
+
+  clearInput() {
+    const textarea = this.shadowRoot.querySelector("#chat-input");
+    if (textarea) {
+      textarea.setValue("");
     }
   }
 }
