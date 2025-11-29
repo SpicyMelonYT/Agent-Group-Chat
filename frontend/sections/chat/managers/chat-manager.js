@@ -35,8 +35,8 @@ export class ChatManager extends Manager {
   }
 
   async initStates() {
-    // Add placeholder messages for testing
-    this.addPlaceholderMessages();
+    // Start with clean slate - no placeholder messages
+    // this.addPlaceholderMessages();
   }
 
   /**
@@ -44,27 +44,50 @@ export class ChatManager extends Manager {
    * @param {string} message - The trimmed message to send
    */
   handleMessageSend(message) {
+    // First, add the user message to the chat interface
+    if (!this.chatInterface) {
+      window.logger.error(
+        {
+          tags: "chat|manager|error",
+          color1: "red",
+        },
+        "Chat interface not available for adding user message"
+      );
+      return;
+    }
+
+    try {
+      this.chatInterface.addMessage("user", message);
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|manager|error",
+          color1: "red",
+        },
+        `Failed to add user message to chat interface: ${error.message}`
+      );
+      return;
+    }
+
+    // Log successful message addition
     window.logger.log(
       {
         tags: "chat|manager|send",
         color1: "cyan",
       },
-      `Message send requested: "${message}"`
+      `User message added: "${message}"`
     );
 
     // TODO: Integrate with NodeLlamaCppManager to generate response
-    // For now, just add the user message and a placeholder response
-    if (this.chatInterface) {
-      this.chatInterface.addMessage("user", message);
-
-      // Placeholder response
-      setTimeout(() => {
+    // For now, just add a placeholder response after successful message addition
+    setTimeout(() => {
+      if (this.chatInterface) {
         this.chatInterface.addMessage(
           "assistant",
           "This is a placeholder response. NodeLlamaCppManager integration coming soon."
         );
-      }, 500);
-    }
+      }
+    }, 500);
   }
 
   /**
