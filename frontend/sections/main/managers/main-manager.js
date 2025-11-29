@@ -2,6 +2,10 @@ import { Manager } from "../../../core/index.js";
 import { sectionManager } from "../../../managers/section-manager.js";
 
 export class MainManager extends Manager {
+  async initGlobalVariables() {
+    // Section config is now handled by SectionManager
+  }
+
   async initElementReferences() {
     // Get component references
     this.mainLayout = document.querySelector("main-layout");
@@ -20,6 +24,7 @@ export class MainManager extends Manager {
       this.mainLayout.addEventListener("navigate", async (e) => {
         const { sectionName } = e.detail;
         if (sectionName && sectionName !== "main") {
+          // SectionManager will handle updating the config
           await this.section.sectionManager.navigateTo(sectionName);
         }
       });

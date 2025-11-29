@@ -8,6 +8,106 @@ export class SectionManager extends Manager {
   constructor() {
     super();
     this.currentSection = "main";
+    this.sectionConfig = null;
+  }
+
+  async initGlobalVariables() {
+    try {
+      // Check if section-config.json exists
+      const configExists = await this.checkConfigExists();
+
+      if (!configExists) {
+        // Create default config with main as active section
+        await this.createDefaultConfig();
+        window.logger.log(
+          {
+            tags: "section|manager|config",
+            color1: "cyan",
+          },
+          "Created default section-config.json"
+        );
+      } else {
+        // Load existing config
+        this.sectionConfig = await window.storeAPI.readJSON("section-config.json");
+        window.logger.log(
+          {
+            tags: "section|manager|config",
+            color1: "green",
+          },
+          "Loaded existing section-config.json:",
+          this.sectionConfig
+        );
+      }
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "section|manager|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        "Failed to initialize section config:",
+        error
+      );
+      // Fallback to default config
+      this.sectionConfig = { activeSection: "main" };
+    }
+  }
+
+  async checkConfigExists() {
+    try {
+      await window.storeAPI.readJSON("section-config.json");
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async createDefaultConfig() {
+    this.sectionConfig = { activeSection: "main" };
+    await window.storeAPI.writeJSON("section-config.json", this.sectionConfig);
+  }
+
+  async updateActiveSection(sectionName) {
+    try {
+      this.sectionConfig.activeSection = sectionName;
+      await window.storeAPI.writeJSON("section-config.json", this.sectionConfig);
+      window.logger.log(
+        {
+          tags: "section|manager|config",
+          color1: "blue",
+        },
+        `Updated active section to: ${sectionName}`
+      );
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "section|manager|error",
+          color1: "red",
+          color2: "orange",
+          includeSource: true,
+        },
+        "Failed to update active section:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Auto-navigate to the stored active section if it's not 'main'
+   * Should be called after all managers are initialized
+   */
+  async autoNavigateToActiveSection() {
+    if (this.sectionConfig && this.sectionConfig.activeSection !== "main") {
+      window.logger.log(
+        {
+          tags: "section|manager|navigate",
+          color1: "yellow",
+        },
+        `Auto-navigating to active section: ${this.sectionConfig.activeSection}`
+      );
+      await this.navigateTo(this.sectionConfig.activeSection);
+    }
   }
 
   /**
@@ -104,6 +204,9 @@ export class SectionManager extends Manager {
       );
       return false;
     }
+
+    // Update the config with the new active section
+    await this.updateActiveSection(sectionName);
 
     return await this.switchToSection(sectionName);
   }

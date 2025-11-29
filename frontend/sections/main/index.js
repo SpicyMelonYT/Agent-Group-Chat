@@ -24,4 +24,7 @@ export class MainSection extends Section {
 document.addEventListener("DOMContentLoaded", async () => {
   let mainSection = new MainSection();
   await mainSection.init();
+
+  // After all managers are initialized, check if we should auto-navigate to a stored section
+  await mainSection.sectionManager.autoNavigateToActiveSection();
 });
