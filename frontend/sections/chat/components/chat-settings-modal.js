@@ -45,25 +45,25 @@ export class ChatSettingsModal extends HTMLElement {
 
       <agc-modal id="settings-modal" width="500px" height="auto" backdrop-darken backdrop-blur>
         <div style="padding: 24px;">
-          <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">Chat Settings</h2>
+          <h2 style="margin: 0 0 20px 0; color: var(--text-primary, #e0e0e0); font-size: 24px;">Chat Settings</h2>
 
           <div style="display: flex; flex-direction: column; gap: 20px;">
             <!-- Model Settings -->
-            <div style="border: 1px solid #ddd; border-radius: 8px; padding: 16px;">
-              <h3 style="margin: 0 0 12px 0; color: #555; font-size: 16px;">Model Settings</h3>
+            <div style="border: 1px solid var(--border-color, #2a2a2a); border-radius: 8px; padding: 16px; background: var(--bg-primary, #121212);">
+              <h3 style="margin: 0 0 12px 0; color: var(--text-secondary, #cccccc); font-size: 16px;">Model Settings</h3>
 
               <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
-                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #333;">
+                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: var(--text-primary, #e0e0e0);">
                     Current Model
                   </label>
-                  <div style="padding: 8px 12px; background: #f5f5f5; border-radius: 4px; color: #666;">
+                  <div style="padding: 8px 12px; background: var(--bg-secondary, #1e1e1e); border-radius: 4px; color: var(--text-secondary, #cccccc);">
                     No model loaded
                   </div>
                 </div>
 
                 <div>
-                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #333;">
+                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: var(--text-primary, #e0e0e0);">
                     Load Model
                   </label>
                   <div style="display: flex; gap: 8px;">
@@ -75,12 +75,12 @@ export class ChatSettingsModal extends HTMLElement {
             </div>
 
             <!-- Chat Settings -->
-            <div style="border: 1px solid #ddd; border-radius: 8px; padding: 16px;">
-              <h3 style="margin: 0 0 12px 0; color: #555; font-size: 16px;">Chat Settings</h3>
+            <div style="border: 1px solid var(--border-color, #2a2a2a); border-radius: 8px; padding: 16px; background: var(--bg-primary, #121212);">
+              <h3 style="margin: 0 0 12px 0; color: var(--text-secondary, #cccccc); font-size: 16px;">Chat Settings</h3>
 
               <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
-                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #333;">
+                  <label style="display: block; margin-bottom: 4px; font-weight: 500; color: var(--text-primary, #e0e0e0);">
                     Message History
                   </label>
                   <div style="display: flex; gap: 8px;">
@@ -92,24 +92,24 @@ export class ChatSettingsModal extends HTMLElement {
             </div>
 
             <!-- System Information -->
-            <div style="border: 1px solid #ddd; border-radius: 8px; padding: 16px;">
-              <h3 style="margin: 0 0 12px 0; color: #555; font-size: 16px;">System Information</h3>
+            <div style="border: 1px solid var(--border-color, #2a2a2a); border-radius: 8px; padding: 16px; background: var(--bg-primary, #121212);">
+              <h3 style="margin: 0 0 12px 0; color: var(--text-secondary, #cccccc); font-size: 16px;">System Information</h3>
 
               <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="font-size: 14px; color: #666;">
-                  <strong>Llama.cpp:</strong> <span id="llama-status">Not initialized</span>
+                <div style="font-size: 14px; color: var(--text-secondary, #cccccc);">
+                  <strong style="color: var(--text-primary, #e0e0e0);">Llama.cpp:</strong> <span id="llama-status">Not initialized</span>
                 </div>
-                <div style="font-size: 14px; color: #666;">
-                  <strong>VRAM:</strong> <span id="vram-info">Unknown</span>
+                <div style="font-size: 14px; color: var(--text-secondary, #cccccc);">
+                  <strong style="color: var(--text-primary, #e0e0e0);">VRAM:</strong> <span id="vram-info">Unknown</span>
                 </div>
-                <div style="font-size: 14px; color: #666;">
-                  <strong>GPU:</strong> <span id="gpu-info">Unknown</span>
+                <div style="font-size: 14px; color: var(--text-primary, #e0e0e0);">
+                  <strong style="color: var(--text-secondary, #cccccc);">GPU:</strong> <span id="gpu-info">Unknown</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color, #2a2a2a);">
             <agc-button id="close-settings-btn">Close</agc-button>
           </div>
         </div>
