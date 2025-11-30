@@ -63,7 +63,7 @@ export class AGCLoadingOverlay extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 9999;
+          z-index: 10000;
           opacity: 1;
           visibility: visible;
           transition: opacity 0.3s ease, visibility 0.3s ease;
