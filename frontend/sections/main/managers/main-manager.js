@@ -1,5 +1,4 @@
 import { Manager } from "../../../core/index.js";
-import { sectionManager } from "../../../managers/section-manager.js";
 
 export class MainManager extends Manager {
   async initGlobalVariables() {
@@ -8,12 +7,32 @@ export class MainManager extends Manager {
 
   async initElementReferences() {
     // Get component references
-    this.mainLayout = document.querySelector("main-layout");
-    this.sectionGrid = document.querySelector("section-grid");
+    this.mainLayout = document.getElementById("main-layout");
+    this.sectionGrid = document.getElementById("section-grid");
+
+    // Get loading overlay from HTML
+    this.loadingOverlay = document.getElementById("loading-overlay");
   }
 
   async initStates() {
-    // Dynamically load and display sections
+    // Wait 1000ms for loading overlay effect
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Check if we should auto-navigate to a different section
+    if (
+      this.section.sectionManager.sectionConfig &&
+      this.section.sectionManager.sectionConfig.activeSection !== "main"
+    ) {
+      // Auto-navigate to stored section
+      this.loadingOverlay.hide();
+      await this.section.sectionManager.navigateTo(
+        this.section.sectionManager.sectionConfig.activeSection
+      );
+      return; // Don't load sections if we're navigating away
+    }
+
+    // Stay on main section - hide loading overlay and load sections
+    this.loadingOverlay.hide();
     await this.loadSections();
   }
 
@@ -24,6 +43,10 @@ export class MainManager extends Manager {
       this.mainLayout.addEventListener("navigate", async (e) => {
         const { sectionName } = e.detail;
         if (sectionName && sectionName !== "main") {
+          // Hide loading overlay if it's still visible
+          if (this.loadingOverlay) {
+            this.loadingOverlay.hide();
+          }
           // SectionManager will handle updating the config
           await this.section.sectionManager.navigateTo(sectionName);
         }
@@ -124,5 +147,15 @@ export class MainManager extends Manager {
       descriptions[sectionName] ||
       `Navigate to the ${this.formatSectionTitle(sectionName)} section`
     );
+  }
+
+  /**
+   * Clean up the loading overlay
+   */
+  cleanupLoadingOverlay() {
+    if (this.loadingOverlay && this.loadingOverlay.parentNode) {
+      this.loadingOverlay.parentNode.removeChild(this.loadingOverlay);
+      this.loadingOverlay = null;
+    }
   }
 }
