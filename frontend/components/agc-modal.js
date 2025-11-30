@@ -98,7 +98,6 @@ export class AGCModal extends HTMLElement {
   updateVisibility() {
     // Explicitly set display based on open attribute
     const hasOpen = this.hasAttribute("open");
-    console.log(`AGCModal: updateVisibility - has open attribute: ${hasOpen}`);
     if (hasOpen) {
       this.style.display = "flex";
     } else {
