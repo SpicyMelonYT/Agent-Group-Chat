@@ -5,6 +5,12 @@ import { SectionManager } from "../../managers/section-manager.js";
 import { ComponentManager } from "../../managers/component-manager.js";
 import { MarkdownManager } from "../../managers/markdown-manager.js";
 
+// Section Specific Components
+import "./components/chat-header.js";
+import "./components/chat-interface.js";
+import "./components/chat-message.js";
+import "./components/chat-settings-modal.js";
+
 // Section Specific Managers
 import { ChatManager } from "./managers/chat-manager.js";
 

@@ -14,11 +14,16 @@
  *   // Handle navigation back to main
  * });
  *
+ * chatHeader.addEventListener('open-settings', () => {
+ *   // Handle settings button click
+ * });
+ *
  * Attributes:
  * - title: The title to display in the header (default: "Chat")
  *
  * Events:
  * - back-to-main: Fired when back button is clicked
+ * - open-settings: Fired when settings button is clicked
  */
 export class ChatHeader extends HTMLElement {
   constructor() {
@@ -94,10 +99,9 @@ export class ChatHeader extends HTMLElement {
 
         <h1 class="title">${title}</h1>
 
-        <!-- Future settings button placeholder -->
-        <!-- <div class="settings-button">
+        <div class="settings-button">
           <agc-button>⚙️ Settings</agc-button>
-        </div> -->
+        </div>
       </div>
     `;
   }
@@ -107,6 +111,16 @@ export class ChatHeader extends HTMLElement {
     if (backButton) {
       backButton.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('back-to-main', {
+          bubbles: true,
+          composed: true
+        }));
+      });
+    }
+
+    const settingsButton = this.shadowRoot.querySelector('.settings-button agc-button');
+    if (settingsButton) {
+      settingsButton.addEventListener('click', () => {
+        this.dispatchEvent(new CustomEvent('open-settings', {
           bubbles: true,
           composed: true
         }));

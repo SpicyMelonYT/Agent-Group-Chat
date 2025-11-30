@@ -146,28 +146,28 @@ export class ChatInterface extends HTMLElement {
 
     // Listen for textarea submit events (Ctrl+Enter)
     textarea.addEventListener("submit", (e) => {
-      this.dispatchEvent(
+        this.dispatchEvent(
         new CustomEvent("send-message", {
-          bubbles: false,
-          composed: false,
-          detail: {
+            bubbles: false,
+            composed: false,
+            detail: {
             inputValue: e.detail.value,
-          },
-        })
-      );
+            },
+          })
+        );
     });
 
     // Listen for send button clicks
     sendButton.addEventListener("click", () => {
-      this.dispatchEvent(
+        this.dispatchEvent(
         new CustomEvent("send-message", {
-          bubbles: false,
-          composed: false,
-          detail: {
+            bubbles: false,
+            composed: false,
+            detail: {
             inputValue: textarea.getValue(),
-          },
-        })
-      );
+            },
+          })
+        );
     });
   }
 

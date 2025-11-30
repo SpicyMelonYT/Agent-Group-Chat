@@ -5,6 +5,10 @@ export class ChatManager extends Manager {
     // Get component references by ID
     this.chatInterface = document.getElementById("chat-interface");
     this.chatHeader = document.querySelector("chat-header");
+    this.chatSettingsModal = document.getElementById("chat-settings-modal");
+
+    // Get loading overlay from HTML
+    this.loadingOverlay = document.getElementById("loading-overlay");
   }
 
   async initEventListeners() {
@@ -39,10 +43,23 @@ export class ChatManager extends Manager {
       this.chatHeader.addEventListener("back-to-main", () => {
         this.goBackToMain();
       });
+
+      // Listen for open-settings events from chat header
+      this.chatHeader.addEventListener("open-settings", () => {
+        this.openSettingsModal();
+      });
     }
   }
 
   async initStates() {
+    // Wait for loading overlay effect
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Hide loading overlay and initialize chat
+    if (this.loadingOverlay) {
+      this.loadingOverlay.hide();
+    }
+
     // Start with clean slate - no placeholder messages
     // this.addPlaceholderMessages();
   }
@@ -225,11 +242,43 @@ export class ChatManager extends Manager {
    * Navigate back to the main section
    */
   async goBackToMain() {
+    // Hide loading overlay if it's still visible
+    if (this.loadingOverlay) {
+      this.loadingOverlay.hide();
+    }
+
     const success = await this.section.sectionManager.navigateTo("main");
     if (success) {
       console.log("Successfully navigated to main");
     } else {
       console.error("Failed to navigate to main");
+    }
+  }
+
+  /**
+   * Open the settings modal
+   */
+  openSettingsModal() {
+    if (this.chatSettingsModal) {
+      this.chatSettingsModal.open();
+    } else {
+      window.logger.error(
+        {
+          tags: "chat|manager|error",
+          color1: "red",
+        },
+        "Chat settings modal not found"
+      );
+    }
+  }
+
+  /**
+   * Clean up the loading overlay
+   */
+  cleanupLoadingOverlay() {
+    if (this.loadingOverlay && this.loadingOverlay.parentNode) {
+      this.loadingOverlay.parentNode.removeChild(this.loadingOverlay);
+      this.loadingOverlay = null;
     }
   }
 }
