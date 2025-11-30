@@ -110,6 +110,8 @@ export class AGCButton extends HTMLElement {
     // Forward click events to host element
     button.addEventListener("click", (e) => {
       if (!this.disabled) {
+        // Stop the native click event from bubbling up
+        e.stopPropagation();
         // Create a new event that does not bubble
         const clickEvent = new CustomEvent("click", {
           bubbles: false,
