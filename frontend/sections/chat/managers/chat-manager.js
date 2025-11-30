@@ -508,7 +508,19 @@ export class ChatManager extends Manager {
     const resolvedPath = (modelPath || this.config?.modelPath || "").trim();
     const allocationSize = contextAllocationSize ?? this.config?.contextAllocationSize ?? 32000;
     const minSize = minContextSize ?? this.config?.minContextSize ?? 16000;
-    const maxSize = maxContextSize ?? this.config?.maxContextSize ?? 48000;
+    let maxSize = maxContextSize ?? this.config?.maxContextSize ?? 48000;
+    
+    // Ensure max >= min
+    if (maxSize < minSize) {
+      window.logger.warn(
+        {
+          tags: "chat|settings|load|warning",
+          color1: "yellow",
+        },
+        `Max context size (${maxSize}) is less than min (${minSize}). Using min as max.`
+      );
+      maxSize = minSize;
+    }
 
     if (!resolvedPath) {
       window.logger.warn(
@@ -904,12 +916,16 @@ export class ChatManager extends Manager {
 
     if (normalized === "completed") {
       this.updateModelProgressIndicators(100);
-      this.hideModelProgressIndicators("Model loaded");
+      // Apply state immediately
       this.applyModelState({
         isModelLoaded: true,
         modelPath: modelPath || this.modelState.modelPath,
         status: "loaded",
       });
+      // Small delay to ensure 100% is visible before hiding the progress bar
+      setTimeout(() => {
+        this.hideModelProgressIndicators("Model loaded");
+      }, 300);
       return;
     }
 

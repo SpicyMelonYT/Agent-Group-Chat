@@ -82,13 +82,16 @@ class ChatSettingsModal extends HTMLElement {
           background: var(--bg-primary, #121212);
           border-radius: 3px;
           overflow: hidden;
+          box-sizing: border-box;
         }
 
         .progress-bar-fill {
+          display: block;
+          width: 0%;
           height: 100%;
           background: linear-gradient(90deg, #4a9eff, #6bb6ff);
-          transition: width 0.2s ease;
           border-radius: 3px;
+          box-sizing: border-box;
         }
 
         .settings-grid {
@@ -473,15 +476,22 @@ class ChatSettingsModal extends HTMLElement {
     if (config.modelPath) {
       this.setModelPath(config.modelPath);
     }
-    if (typeof config.contextAllocationSize === "number") {
-      this.setContextAllocationSize(config.contextAllocationSize);
-    }
-    if (typeof config.minContextSize === "number") {
-      this.setMinContextSize(config.minContextSize);
-    }
-    if (typeof config.maxContextSize === "number") {
-      this.setMaxContextSize(config.maxContextSize);
-    }
+    // Always set context settings - use config values or defaults
+    this.setContextAllocationSize(
+      typeof config.contextAllocationSize === "number" 
+        ? config.contextAllocationSize 
+        : 32000
+    );
+    this.setMinContextSize(
+      typeof config.minContextSize === "number" 
+        ? config.minContextSize 
+        : 16000
+    );
+    this.setMaxContextSize(
+      typeof config.maxContextSize === "number" 
+        ? config.maxContextSize 
+        : 48000
+    );
   }
 
   /**
@@ -692,12 +702,14 @@ class ChatSettingsModal extends HTMLElement {
 
   /**
    * Update progress bar fill width instantly
-   * @param {number} percentage
+   * @param {number} percentage - Progress percentage (0-100)
    */
   updateProgressFill(percentage) {
     const fill = this.shadowRoot?.querySelector("#model-progress-fill");
     if (fill) {
-      fill.style.width = `${percentage}%`;
+      // Match chat-interface approach: clamp and round, then set directly
+      const clamped = Math.max(0, Math.min(100, Math.round(percentage || 0)));
+      fill.style.width = `${clamped}%`;
     }
   }
 }
