@@ -15,6 +15,9 @@ export class ChatManager extends Manager {
       status: "uninitialized",
     };
     this.modelProgressUnsub = null;
+    this.chatChunkUnsub = null;
+    this.messages = []; // Track conversation history
+    this.currentAssistantMessage = null; // Reference to currently streaming assistant message
   }
 
   async initElementReferences() {
@@ -137,6 +140,7 @@ export class ChatManager extends Manager {
     // Sync model state from backend and start listening for progress events
     await this.syncModelStateFromBackend();
     this.setupModelProgressListener();
+    this.setupChatChunkListener();
 
     // Start with clean slate - no placeholder messages
     // this.addPlaceholderMessages();
@@ -159,7 +163,7 @@ export class ChatManager extends Manager {
    * Handle message send event
    * @param {string} message - The trimmed message to send
    */
-  handleMessageSend(message) {
+  async handleMessageSend(message) {
     // First, add the user message to the chat interface
     if (!this.chatInterface) {
       window.logger.error(
@@ -178,6 +182,12 @@ export class ChatManager extends Manager {
 
     try {
       this.chatInterface.addMessage("user", message, timestamp);
+
+      // Add user message to conversation history (llama format)
+      this.messages.push({
+        type: "user",
+        text: message,
+      });
     } catch (error) {
       window.logger.error(
         {
@@ -199,26 +209,44 @@ export class ChatManager extends Manager {
       `User message added: "${message}"`
     );
 
-    // TODO: Integrate with NodeLlamaCppManager to generate response
-    // For now, just add a placeholder response after successful message addition
-    setTimeout(() => {
-      if (this.chatInterface) {
-        const responseTimestamp = this.getCurrentTimestamp();
-        this.chatInterface.addMessage(
-          "assistant",
-          "This is a placeholder response. NodeLlamaCppManager integration coming soon.",
-          responseTimestamp
-        );
-      }
-    }, 500);
+    // Create empty assistant message for streaming
+    let assistantMessage;
+    try {
+      assistantMessage = this.chatInterface.createAssistantMessage();
+      // Store reference for streaming chunks
+      this.currentAssistantMessage = assistantMessage;
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|manager|error",
+          color1: "red",
+          includeSource: true,
+        },
+        `Failed to create assistant message: ${error.message}`
+      );
+      return;
+    }
+
+    // Start streaming chat generation
+    try {
+      await window.nodellamacppAPI.startStreamingChat(this.messages);
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|manager|streaming|error",
+          color1: "red",
+          includeSource: true,
+        },
+        `Failed to start streaming chat: ${error.message}`
+      );
+    }
   }
 
   /**
    * Handle message change event
    * @param {string} value - The current input value
    */
-  handleMessageChange(value) {
-  }
+  handleMessageChange(value) {}
 
   /**
    * Add placeholder messages for testing the UI
@@ -714,6 +742,9 @@ export class ChatManager extends Manager {
         this.chatInterface.clearMessages();
       }
 
+      // Clear our conversation history
+      this.messages = [];
+
       window.logger.log(
         {
           tags: "chat|settings|clear|success",
@@ -788,12 +819,12 @@ export class ChatManager extends Manager {
 
     const path = this.config?.modelPath;
     if (!path) {
-window.logger.warn(
-            {
-              tags: "chat|manager|load|required",
-              color1: "yellow",
-              includeSource: true,
-            },
+      window.logger.warn(
+        {
+          tags: "chat|manager|load|required",
+          color1: "yellow",
+          includeSource: true,
+        },
         "No model path configured. Please choose a model in settings."
       );
       this.openSettingsModal();
@@ -902,6 +933,24 @@ window.logger.warn(
   }
 
   /**
+   * Setup chat chunk streaming listener
+   */
+  setupChatChunkListener() {
+    if (!window.nodellamacppAPI?.onChatChunk) {
+      return;
+    }
+
+    if (typeof this.chatChunkUnsub === "function") {
+      this.chatChunkUnsub();
+      this.chatChunkUnsub = null;
+    }
+
+    this.chatChunkUnsub = window.nodellamacppAPI.onChatChunk((chunk) =>
+      this.handleChatChunk(chunk)
+    );
+  }
+
+  /**
    * Handle backend load/unload progress events
    * @param {Object} event
    */
@@ -948,6 +997,132 @@ window.logger.warn(
         isModelLoaded: false,
         status: "error",
       });
+    }
+  }
+
+  /**
+   * Handle streaming chat response chunks
+   * @param {Object} chunk - Chunk data from backend
+   */
+  handleChatChunk(chunk = {}) {
+    const { text, isComplete, error } = chunk;
+
+    // Handle different chunk types
+    if (text && typeof text === 'object') {
+      if (text.type === 'segment') {
+        // Segment chunk: { type: "segment", segmentType: "thought", text: "...", segmentStartTime: "..." }
+        this.handleSegmentChunk(text);
+      } else if (text.tokens && Array.isArray(text.tokens)) {
+        // Regular text chunk: { tokens: [...], text: "actual text" }
+        this.handleTextChunk(text.text || '');
+      }
+    } else if (text && typeof text === 'string') {
+      // Fallback for simple string chunks
+      this.handleTextChunk(text);
+    }
+
+    if (error) {
+      window.logger.error(
+        {
+          tags: "chat|chunk|error",
+          color1: "red",
+        },
+        "Chat generation error:",
+        error
+      );
+      return;
+    }
+
+    if (isComplete) {
+      // Generation complete - clean up current message reference
+      this.currentAssistantMessage = null;
+      window.logger.log(
+        {
+          tags: "chat|chunk|complete",
+          color1: "green",
+        },
+        "Chat generation completed"
+      );
+      return;
+    }
+  }
+
+  /**
+   * Handle segment start/end chunks
+   * @param {Object} segmentData - Segment chunk data
+   */
+  handleSegmentChunk(segmentData) {
+    const { segmentType, text, segmentStartTime, segmentEndTime } = segmentData;
+
+    if (!this.currentAssistantMessage) return;
+
+    // Map backend segment types to frontend segment types
+    const mappedSegmentType = this.mapSegmentType(segmentType);
+
+    if (segmentStartTime && !segmentEndTime) {
+      // Segment start - create new segment
+      const timestamp = segmentStartTime ? new Date(segmentStartTime).toLocaleTimeString() : "";
+      this.currentAssistantMessage.addSegment(mappedSegmentType, timestamp);
+      window.logger.log(
+        {
+          tags: "chat|chunk|segment|start",
+          color1: "blue",
+        },
+        `Started ${mappedSegmentType} segment (backend: ${segmentType})`
+      );
+    } else if (segmentEndTime) {
+      // Segment end - segment is complete, don't create new segment
+      window.logger.log(
+        {
+          tags: "chat|chunk|segment|end",
+          color1: "blue",
+        },
+        `Ended ${mappedSegmentType} segment (backend: ${segmentType})`
+      );
+    } else {
+      // Segment content - append to current segment
+      this.currentAssistantMessage.appendSegmentContentByType(mappedSegmentType, text);
+    }
+  }
+
+  /**
+   * Map backend segment types to frontend segment types
+   * @param {string} backendType - Segment type from backend
+   * @returns {string} Mapped segment type for frontend
+   */
+  mapSegmentType(backendType) {
+    switch (backendType) {
+      case "thought":
+        return "thinking";
+      case "commentary":
+        return "commentary";
+      case "function-call":
+        return "function-call";
+      default:
+        return "response"; // Default to response for unknown types
+    }
+  }
+
+  /**
+   * Handle regular text chunks (final response)
+   * @param {string} text - Text to append
+   */
+  handleTextChunk(text) {
+    if (!text || !this.currentAssistantMessage) return;
+
+    // Try to append to existing response segment, create one if it doesn't exist
+    const appended = this.currentAssistantMessage.appendSegmentContentByType("response", text);
+    if (!appended) {
+      // No response segment exists, create one
+      const timestamp = new Date().toLocaleTimeString();
+      this.currentAssistantMessage.addSegment("response", timestamp);
+      this.currentAssistantMessage.appendSegmentContentByType("response", text);
+    }
+
+    // Update conversation history
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (lastMessage && lastMessage.type === "model") {
+      lastMessage.response[0] += text;
     }
   }
 

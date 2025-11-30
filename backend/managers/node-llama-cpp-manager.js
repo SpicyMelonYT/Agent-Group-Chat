@@ -436,9 +436,15 @@ export class NodeLlamaCppManager extends Manager {
           type: "eventListener",
           eventChannel: "NodeLlamaCppManager:modelLoadProgress",
         },
-        // TODO: Define IPC API methods for:
-        // - Streaming chat completion
-        // - Streaming responses
+        // Streaming chat completion
+        startStreamingChat: {
+          channel: "NodeLlamaCppManager:startStreamingChat",
+        },
+        // Event listener for chat response chunks
+        onChatChunk: {
+          type: "eventListener",
+          eventChannel: "NodeLlamaCppManager:chatChunk",
+        },
       },
     };
   }
@@ -457,6 +463,134 @@ export class NodeLlamaCppManager extends Manager {
     };
   }
 
-  // TODO: Add methods for:
-  // - Streaming chat completion with conversation history
+  /**
+   * Generate streaming chat response
+   * @param {Array} conversation - Array of message objects in llama format
+   * @param {Object} options - Generation options
+   * @returns {Object} Generation result
+   */
+  async generate(conversation, options = {}) {
+    if (!this.currentSession) {
+      throw new Error("No active chat session. Load a model first.");
+    }
+
+    // Messages are already in llama format from frontend
+    const messages = conversation;
+
+    // Extract the last user message
+    const lastMessage = messages.pop();
+    if (!lastMessage || lastMessage.type !== "user") {
+      throw new Error("Last message must be from user");
+    }
+
+    // Set conversation history (excluding the last message)
+    this.currentSession.setChatHistory(messages);
+
+    // Create abort controller for cancellation
+    const abortController = new AbortController();
+
+    global.logger.log(
+      {
+        tags: "llama|chat|generate",
+        color1: "blue",
+      },
+      `Starting chat generation with prompt: "${lastMessage.text}" and ${messages.length} history messages`
+    );
+
+    try {
+      // Generate with streaming
+      const result = await this.currentSession.promptWithMeta(
+        lastMessage.text,
+        {
+          onResponseChunk: (chunk) => {
+            // Send chunk to frontend
+            if (this.app && this.app.mainWindow) {
+              this.app.mainWindow.webContents.send(
+                "NodeLlamaCppManager:chatChunk",
+                {
+                  text: chunk,
+                  isComplete: false,
+                }
+              );
+            }
+          },
+          stopOnAbortSignal: true,
+          signal: abortController.signal,
+          ...options,
+        }
+      );
+
+      // Send completion signal
+      if (this.app && this.app.mainWindow) {
+        this.app.mainWindow.webContents.send("NodeLlamaCppManager:chatChunk", {
+          text: "",
+          isComplete: true,
+        });
+      }
+
+      global.logger.log(
+        {
+          tags: "llama|chat|generate|success",
+          color1: "green",
+        },
+        "Chat generation completed successfully"
+      );
+
+      return result;
+    } catch (error) {
+      // Send error signal to frontend
+      if (this.app && this.app.mainWindow) {
+        this.app.mainWindow.webContents.send("NodeLlamaCppManager:chatChunk", {
+          text: "",
+          isComplete: true,
+          error: error.message,
+        });
+      }
+
+      global.logger.error(
+        {
+          tags: "llama|chat|generate|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Chat generation failed:",
+        error
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * IPC handler for starting streaming chat
+   * @param {Array} conversation - Array of message objects
+   * @param {Object} options - Generation options
+   */
+  async startStreamingChat(conversation, options = {}) {
+    try {
+      global.logger.log(
+        {
+          tags: "llama|chat|ipc|start",
+          color1: "blue",
+        },
+        "Starting streaming chat generation",
+        {
+          messageCount: conversation?.length || 0,
+          hasSession: !!this.currentSession,
+        }
+      );
+
+      return await this.generate(conversation, options);
+    } catch (error) {
+      global.logger.error(
+        {
+          tags: "llama|chat|ipc|error",
+          color1: "red",
+        },
+        "IPC startStreamingChat failed:",
+        error
+      );
+      throw error;
+    }
+  }
 }
