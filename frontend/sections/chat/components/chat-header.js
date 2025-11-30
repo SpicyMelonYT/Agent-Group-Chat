@@ -118,7 +118,7 @@ export class ChatHeader extends HTMLElement {
     if (backButton) {
       backButton.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('back-to-main', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -128,7 +128,7 @@ export class ChatHeader extends HTMLElement {
     if (settingsButton) {
       settingsButton.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('open-settings', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });

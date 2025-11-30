@@ -51,7 +51,7 @@ export class Section {
         );
       } catch (error) {
         this.logger.error(
-          { tags: "section", color1: "red" },
+          { tags: "section", color1: "red", includeSource: true },
           `Error initializing manager: ${manager.constructor.name}`,
           error
         );

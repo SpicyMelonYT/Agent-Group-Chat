@@ -83,6 +83,7 @@ export class WindowManager extends Manager {
           tags: "window|manager|warning",
           color1: "yellow",
           color2: "orange",
+          includeSource: true,
         },
         "No main window available for event listeners"
       );
@@ -194,6 +195,7 @@ export class WindowManager extends Manager {
           tags: "window|config|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         "Failed to save window config:",
         error

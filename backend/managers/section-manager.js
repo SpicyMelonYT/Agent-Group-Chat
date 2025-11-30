@@ -131,6 +131,7 @@ export class SectionManager extends Manager {
           tags: "section|manager|list|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         "Failed to list sections:",
         error

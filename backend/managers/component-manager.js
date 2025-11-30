@@ -86,6 +86,7 @@ export class ComponentManager extends Manager {
           {
             tags: "component|manager|scan|error",
             color1: "red",
+            includeSource: true,
           },
           `Path is not a directory: ${relativePath}`
         );

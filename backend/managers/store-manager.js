@@ -388,6 +388,7 @@ export class StoreManager extends Manager {
             tags: "store|watcher|error",
             color1: "red",
             color2: "orange",
+            includeSource: true,
           },
           `Error notifying file watcher for ${filePath}:`,
           error
@@ -666,6 +667,7 @@ export class StoreManager extends Manager {
           tags: "store|dialog|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         "Failed to show open dialog:",
         error

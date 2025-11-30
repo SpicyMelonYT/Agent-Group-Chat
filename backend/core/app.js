@@ -102,6 +102,7 @@ export class App {
                 tags: "app|core|preload|api|warning",
                 color1: "yellow",
                 color2: "orange",
+                includeSource: true,
               },
               `Invalid preload API config from ${manager.constructor.name}`
             );
@@ -112,6 +113,7 @@ export class App {
               tags: "app|core|preload|api|warning",
               color1: "yellow",
               color2: "orange",
+              includeSource: true,
             },
             `Manager ${manager.constructor.name} has no initPreload method`
           );

@@ -304,7 +304,7 @@ class ChatSettingsModal extends HTMLElement {
     if (this.shadowRoot.querySelector('#browse-model-btn')) {
       this.shadowRoot.querySelector('#browse-model-btn').addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('browse-model-request', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -314,7 +314,7 @@ class ChatSettingsModal extends HTMLElement {
     if (loadModelBtn) {
       loadModelBtn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('load-model-request', {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: {
             modelPath: this.getModelPath(),
@@ -330,7 +330,7 @@ class ChatSettingsModal extends HTMLElement {
     if (unloadModelBtn) {
       unloadModelBtn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('unload-model-request', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -340,7 +340,7 @@ class ChatSettingsModal extends HTMLElement {
     if (clearHistoryBtn) {
       clearHistoryBtn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('clear-history-request', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -350,7 +350,7 @@ class ChatSettingsModal extends HTMLElement {
     if (exportChatBtn) {
       exportChatBtn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('export-chat-request', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -363,7 +363,7 @@ class ChatSettingsModal extends HTMLElement {
         // ensure our wrapper state is consistent
         this.removeAttribute('open');
         this.dispatchEvent(new CustomEvent('close', {
-          bubbles: true,
+          bubbles: false,
           composed: true
         }));
       });
@@ -386,7 +386,7 @@ class ChatSettingsModal extends HTMLElement {
       this.hideProgress();
       
       this.dispatchEvent(new CustomEvent('open', {
-        bubbles: true,
+        bubbles: false,
         composed: true
       }));
     }

@@ -313,20 +313,13 @@ export class ChatInterface extends HTMLElement {
    * @param {string} label
    */
   showModelProgress(label = "Loading model...") {
-    console.log("[DEBUG] ChatInterface.showModelProgress called with label:", label);
     const container = this.shadowRoot.querySelector("#chat-model-progress");
     const labelEl = this.shadowRoot.querySelector("#chat-model-progress-label");
     const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
 
     if (container) {
-      console.log("[DEBUG] Setting chat progress container to visible");
       container.classList.add("visible");
       container.style.opacity = "1";
-
-      console.log("[DEBUG] Container styles after setting:", {
-        opacity: container.style.opacity,
-        classList: container.classList.toString()
-      });
     }
     if (labelEl) {
       labelEl.textContent = label;

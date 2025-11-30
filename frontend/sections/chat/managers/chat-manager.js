@@ -39,6 +39,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|manager|error",
           color1: "red",
+          includeSource: true,
         },
         "Chat interface component not found"
       );
@@ -48,19 +49,14 @@ export class ChatManager extends Manager {
     // Listen for send-message events
     this.chatInterface.addEventListener("send-message", async (e) => {
       const message = e.detail.inputValue.trim();
-      console.log(
-        "[DEBUG] Send message event received, message:",
-        message.substring(0, 50) + "..."
-      );
       if (message) {
-        console.log("[DEBUG] Calling ensureModelLoaded...");
         const ready = await this.ensureModelLoaded();
-        console.log("[DEBUG] ensureModelLoaded returned:", ready);
         if (!ready) {
           window.logger.warn(
             {
               tags: "chat|manager|load|required",
               color1: "yellow",
+              includeSource: true,
             },
             "Cannot send message until a model is loaded. Please load a model in settings."
           );
@@ -170,6 +166,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|manager|error",
           color1: "red",
+          includeSource: true,
         },
         "Chat interface not available for adding user message"
       );
@@ -186,6 +183,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|manager|error",
           color1: "red",
+          includeSource: true,
         },
         `Failed to add user message to chat interface: ${error.message}`
       );
@@ -220,15 +218,6 @@ export class ChatManager extends Manager {
    * @param {string} value - The current input value
    */
   handleMessageChange(value) {
-    // Log for debugging (can be removed or filtered later)
-    // window.logger.log(
-    //   {
-    //     tags: "chat|manager|change",
-    //     color1: "grey",
-    //     showTag: false,
-    //   },
-    //   `Input changed: "${value}"`
-    // );
   }
 
   /**
@@ -367,6 +356,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|manager|error",
           color1: "red",
+          includeSource: true,
         },
         "Chat settings modal not found"
       );
@@ -506,12 +496,9 @@ export class ChatManager extends Manager {
     minContextSize = null,
     maxContextSize = null
   ) {
-    console.log("[DEBUG] handleLoadModelRequest called with path:", modelPath);
     if (this.modelLoading) {
-      console.log("[DEBUG] Already loading, returning false");
       return false;
     }
-    console.log("[DEBUG] Setting modelLoading to true");
     this.modelLoading = true;
 
     // Use provided values or fall back to config defaults
@@ -527,6 +514,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|settings|load|warning",
           color1: "yellow",
+          includeSource: true,
         },
         `Max context size (${maxSize}) is less than min (${minSize}). Using min as max.`
       );
@@ -538,6 +526,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|settings|load|warning",
           color1: "yellow",
+          includeSource: true,
         },
         "No model path available. Please choose a GGUF file first."
       );
@@ -568,7 +557,6 @@ export class ChatManager extends Manager {
       `(allocation: ${allocationSize}, context: ${minSize}-${maxSize})`
     );
 
-    console.log("[DEBUG] Calling showModelProgressIndicators");
     this.showModelProgressIndicators("Loading model...");
 
     // Yield control to allow UI to update before starting the async operation
@@ -589,17 +577,12 @@ export class ChatManager extends Manager {
         contextSize: maxSize > 0 ? maxSize : "auto",
       };
 
-      console.log(
-        "[DEBUG] About to call window.nodellamacppAPI.loadModel with path:",
-        resolvedPath
-      );
       await window.nodellamacppAPI.loadModel(
         resolvedPath,
         modelConfig,
         contextConfig,
         {} // sessionConfig
       );
-      console.log("[DEBUG] API call completed successfully");
 
       // Save config with all settings
       const configUpdate = {
@@ -768,6 +751,7 @@ export class ChatManager extends Manager {
         {
           tags: "chat|settings|export|todo",
           color1: "yellow",
+          includeSource: true,
         },
         "Chat export not yet implemented"
       );
@@ -798,31 +782,24 @@ export class ChatManager extends Manager {
    * @returns {Promise<boolean>} True if a model is ready
    */
   async ensureModelLoaded() {
-    console.log(
-      "[DEBUG] ensureModelLoaded called, current model state:",
-      this.modelState
-    );
     if (this.modelState?.isModelLoaded) {
-      console.log("[DEBUG] Model already loaded, returning true");
       return true;
     }
 
     const path = this.config?.modelPath;
-    console.log("[DEBUG] Model path from config:", path);
     if (!path) {
-      console.log("[DEBUG] No model path configured, opening settings modal");
-      window.logger.warn(
-        {
-          tags: "chat|manager|load|required",
-          color1: "yellow",
-        },
+window.logger.warn(
+            {
+              tags: "chat|manager|load|required",
+              color1: "yellow",
+              includeSource: true,
+            },
         "No model path configured. Please choose a model in settings."
       );
       this.openSettingsModal();
       return false;
     }
 
-    console.log("[DEBUG] Calling handleLoadModelRequest with path:", path);
     return await this.handleLoadModelRequest(path);
   }
 
@@ -931,15 +908,8 @@ export class ChatManager extends Manager {
   handleModelProgressEvent(event = {}) {
     const { status, percentage = 0, modelPath, error } = event;
     const normalized = (status || "").toLowerCase();
-    console.log(
-      "[DEBUG] Progress event received - status:",
-      normalized,
-      "percentage:",
-      percentage
-    );
 
     if (normalized === "loading") {
-      console.log("[DEBUG] Updating progress indicators to:", percentage);
       // Update progress indicators - they should already be shown from handleLoadModelRequest
       this.updateModelProgressIndicators(percentage);
       return;
@@ -982,16 +952,10 @@ export class ChatManager extends Manager {
   }
 
   showModelProgressIndicators(label = "Loading model...") {
-    console.log(
-      "[DEBUG] showModelProgressIndicators called with label:",
-      label
-    );
     if (this.chatSettingsModal) {
-      console.log("[DEBUG] Calling chatSettingsModal.showProgress");
       this.chatSettingsModal.showProgress(label);
     }
     if (this.chatInterface) {
-      console.log("[DEBUG] Calling chatInterface.showModelProgress");
       this.chatInterface.showModelProgress(label);
     }
   }

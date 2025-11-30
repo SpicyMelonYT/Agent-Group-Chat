@@ -67,6 +67,7 @@ export class MainManager extends Manager {
           {
             tags: "main|manager|error",
             color1: "red",
+            includeSource: true,
           },
           "Section grid not found"
         );

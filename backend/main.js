@@ -111,6 +111,7 @@ if (process.argv.includes("--dev")) {
         tags: "main|dev|hot-reload|error",
         color1: "yellow",
         color2: "orange",
+        includeSource: true,
       },
       `Hot reloading not available: ${error?.message || error}`
     );
@@ -138,6 +139,7 @@ app.whenReady().then(async () => {
           tags: "main|ipc|preload|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         "Failed to send manager API configs:",
         error

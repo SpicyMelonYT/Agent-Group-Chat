@@ -54,7 +54,7 @@ export class ChatMessage extends HTMLElement {
       this._isInitialized = true;
       // Dispatch event to notify that component is ready
       this.dispatchEvent(
-        new CustomEvent("chat-message-ready", { bubbles: true, composed: true })
+        new CustomEvent("chat-message-ready", { bubbles: false, composed: true })
       );
     }
   }

@@ -53,6 +53,7 @@ export class NodeLlamaCppManager extends Manager {
           color1: "red",
           color2: "orange",
           includeSource: true,
+          includeSource: true,
         },
         "Failed to initialize NodeLlamaCppManager:",
         error
@@ -148,6 +149,7 @@ export class NodeLlamaCppManager extends Manager {
           tags: "llama|dispose|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         "Error disposing Llama instance:",
         error
@@ -317,6 +319,7 @@ export class NodeLlamaCppManager extends Manager {
           tags: "llama|model|load|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         `Failed to load model ${modelPath}:`,
         error
@@ -368,6 +371,7 @@ export class NodeLlamaCppManager extends Manager {
           tags: "llama|model|unload|error",
           color1: "red",
           color2: "orange",
+          includeSource: true,
         },
         `Failed to dispose model: ${errorMsg}`
       );

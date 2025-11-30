@@ -565,7 +565,7 @@ export class AGCTextarea extends HTMLElement {
       this.autoResize();
       this.dispatchEvent(
         new CustomEvent("change", {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: { value: e.target.value, originalEvent: e },
         })
@@ -576,7 +576,7 @@ export class AGCTextarea extends HTMLElement {
     textarea.addEventListener("focus", (e) => {
       this.dispatchEvent(
         new CustomEvent("open", {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: { originalEvent: e },
         })
@@ -588,7 +588,7 @@ export class AGCTextarea extends HTMLElement {
       const isValid = this.isValid();
       this.dispatchEvent(
         new CustomEvent("close", {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: {
             value: textarea.value,
@@ -608,7 +608,7 @@ export class AGCTextarea extends HTMLElement {
         e.preventDefault(); // Prevent default new line behavior
         this.dispatchEvent(
           new CustomEvent("submit", {
-            bubbles: true,
+            bubbles: false,
             composed: true,
             detail: { value: textarea.value, originalEvent: e },
           })

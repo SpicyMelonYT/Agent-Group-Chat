@@ -594,7 +594,7 @@ export class AGCInput extends HTMLElement {
       // Do not write back to attribute here to avoid re-renders during typing
       this.dispatchEvent(
         new CustomEvent("change", {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: { value: e.target.value, originalEvent: e },
         })
@@ -605,7 +605,7 @@ export class AGCInput extends HTMLElement {
     input.addEventListener("focus", (e) => {
       this.dispatchEvent(
         new CustomEvent("open", {
-          bubbles: true,
+          bubbles: false,
           composed: true,
           detail: { originalEvent: e },
         })
@@ -635,7 +635,7 @@ export class AGCInput extends HTMLElement {
       if (e.key === "Enter") {
         this.dispatchEvent(
           new CustomEvent("submit", {
-            bubbles: true,
+            bubbles: false,
             composed: true,
             detail: { value: input.value, originalEvent: e },
           })
