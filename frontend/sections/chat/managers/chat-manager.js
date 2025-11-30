@@ -48,8 +48,14 @@ export class ChatManager extends Manager {
     // Listen for send-message events
     this.chatInterface.addEventListener("send-message", async (e) => {
       const message = e.detail.inputValue.trim();
+      console.log(
+        "[DEBUG] Send message event received, message:",
+        message.substring(0, 50) + "..."
+      );
       if (message) {
+        console.log("[DEBUG] Calling ensureModelLoaded...");
         const ready = await this.ensureModelLoaded();
+        console.log("[DEBUG] ensureModelLoaded returned:", ready);
         if (!ready) {
           window.logger.warn(
             {
@@ -198,7 +204,7 @@ export class ChatManager extends Manager {
     // TODO: Integrate with NodeLlamaCppManager to generate response
     // For now, just add a placeholder response after successful message addition
     setTimeout(() => {
-    if (this.chatInterface) {
+      if (this.chatInterface) {
         const responseTimestamp = this.getCurrentTimestamp();
         this.chatInterface.addMessage(
           "assistant",
@@ -206,7 +212,7 @@ export class ChatManager extends Manager {
           responseTimestamp
         );
       }
-      }, 500);
+    }, 500);
   }
 
   /**
@@ -241,7 +247,7 @@ export class ChatManager extends Manager {
     // Example AI response with multiple segments - all in ONE message bubble
     // This demonstrates the timeline of generation: thinking → commentary → function-call → thinking → response
     const assistantBubble = this.chatInterface.createAssistantMessage();
-    
+
     // Wait for component to be connected and initialized
     const addSegments = () => {
       // Add segments one by one with delays to simulate streaming
@@ -338,7 +344,7 @@ export class ChatManager extends Manager {
     if (this.chatSettingsModal) {
       // Sync latest state from backend before opening
       await this.syncModelStateFromBackend();
-      
+
       // Apply the synced state to the modal
       const statusLabel = this.formatStatusLabel(
         this.modelState.status,
@@ -348,12 +354,12 @@ export class ChatManager extends Manager {
         modelPath: this.modelState.modelPath || this.config?.modelPath,
         statusLabel,
       });
-      
+
       // Populate config data including context settings
       if (this.config) {
         this.chatSettingsModal.setConfigData(this.config);
       }
-      
+
       // Open the modal (this will also hide progress bar)
       this.chatSettingsModal.open();
     } else {
@@ -439,9 +445,9 @@ export class ChatManager extends Manager {
 
       // Show file open dialog filtered to GGUF files
       const filePaths = await window.storeAPI.showOpenDialog({
-        filters: [{ name: 'GGUF Files', extensions: ['gguf'] }],
+        filters: [{ name: "GGUF Files", extensions: ["gguf"] }],
         defaultPath: this.config?.modelPath || undefined,
-        multiSelections: false
+        multiSelections: false,
       });
 
       if (filePaths && filePaths.length > 0) {
@@ -460,7 +466,8 @@ export class ChatManager extends Manager {
             tags: "chat|settings|browse|success",
             color1: "green",
           },
-          "Model file selected:", selectedPath
+          "Model file selected:",
+          selectedPath
         );
       } else {
         window.logger.log(
@@ -499,17 +506,21 @@ export class ChatManager extends Manager {
     minContextSize = null,
     maxContextSize = null
   ) {
+    console.log("[DEBUG] handleLoadModelRequest called with path:", modelPath);
     if (this.modelLoading) {
+      console.log("[DEBUG] Already loading, returning false");
       return false;
     }
+    console.log("[DEBUG] Setting modelLoading to true");
     this.modelLoading = true;
 
     // Use provided values or fall back to config defaults
     const resolvedPath = (modelPath || this.config?.modelPath || "").trim();
-    const allocationSize = contextAllocationSize ?? this.config?.contextAllocationSize ?? 32000;
+    const allocationSize =
+      contextAllocationSize ?? this.config?.contextAllocationSize ?? 32000;
     const minSize = minContextSize ?? this.config?.minContextSize ?? 16000;
     let maxSize = maxContextSize ?? this.config?.maxContextSize ?? 48000;
-    
+
     // Ensure max >= min
     if (maxSize < minSize) {
       window.logger.warn(
@@ -557,7 +568,11 @@ export class ChatManager extends Manager {
       `(allocation: ${allocationSize}, context: ${minSize}-${maxSize})`
     );
 
+    console.log("[DEBUG] Calling showModelProgressIndicators");
     this.showModelProgressIndicators("Loading model...");
+
+    // Yield control to allow UI to update before starting the async operation
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
       // Prepare model config with context allocation size
@@ -574,12 +589,17 @@ export class ChatManager extends Manager {
         contextSize: maxSize > 0 ? maxSize : "auto",
       };
 
+      console.log(
+        "[DEBUG] About to call window.nodellamacppAPI.loadModel with path:",
+        resolvedPath
+      );
       await window.nodellamacppAPI.loadModel(
         resolvedPath,
         modelConfig,
         contextConfig,
         {} // sessionConfig
       );
+      console.log("[DEBUG] API call completed successfully");
 
       // Save config with all settings
       const configUpdate = {
@@ -778,12 +798,19 @@ export class ChatManager extends Manager {
    * @returns {Promise<boolean>} True if a model is ready
    */
   async ensureModelLoaded() {
+    console.log(
+      "[DEBUG] ensureModelLoaded called, current model state:",
+      this.modelState
+    );
     if (this.modelState?.isModelLoaded) {
+      console.log("[DEBUG] Model already loaded, returning true");
       return true;
     }
 
     const path = this.config?.modelPath;
+    console.log("[DEBUG] Model path from config:", path);
     if (!path) {
+      console.log("[DEBUG] No model path configured, opening settings modal");
       window.logger.warn(
         {
           tags: "chat|manager|load|required",
@@ -795,6 +822,7 @@ export class ChatManager extends Manager {
       return false;
     }
 
+    console.log("[DEBUG] Calling handleLoadModelRequest with path:", path);
     return await this.handleLoadModelRequest(path);
   }
 
@@ -903,14 +931,17 @@ export class ChatManager extends Manager {
   handleModelProgressEvent(event = {}) {
     const { status, percentage = 0, modelPath, error } = event;
     const normalized = (status || "").toLowerCase();
+    console.log(
+      "[DEBUG] Progress event received - status:",
+      normalized,
+      "percentage:",
+      percentage
+    );
 
     if (normalized === "loading") {
-      // Only show progress if we're actually in a loading state
-      // (don't show on stale 0% events when modal first opens)
-      if (this.modelLoading || percentage > 0) {
-        this.showModelProgressIndicators("Loading model...");
-        this.updateModelProgressIndicators(percentage);
-      }
+      console.log("[DEBUG] Updating progress indicators to:", percentage);
+      // Update progress indicators - they should already be shown from handleLoadModelRequest
+      this.updateModelProgressIndicators(percentage);
       return;
     }
 
@@ -941,9 +972,7 @@ export class ChatManager extends Manager {
     }
 
     if (normalized === "error") {
-      const label = error
-        ? `Load failed: ${error}`
-        : "Model load failed";
+      const label = error ? `Load failed: ${error}` : "Model load failed";
       this.hideModelProgressIndicators(label);
       this.applyModelState({
         isModelLoaded: false,
@@ -953,10 +982,16 @@ export class ChatManager extends Manager {
   }
 
   showModelProgressIndicators(label = "Loading model...") {
+    console.log(
+      "[DEBUG] showModelProgressIndicators called with label:",
+      label
+    );
     if (this.chatSettingsModal) {
+      console.log("[DEBUG] Calling chatSettingsModal.showProgress");
       this.chatSettingsModal.showProgress(label);
     }
     if (this.chatInterface) {
+      console.log("[DEBUG] Calling chatInterface.showModelProgress");
       this.chatInterface.showModelProgress(label);
     }
   }

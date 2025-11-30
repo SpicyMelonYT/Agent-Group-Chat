@@ -68,15 +68,17 @@ export class ChatInterface extends HTMLElement {
         }
 
         .model-progress {
-          display: none;
+          display: flex;
           flex-direction: column;
           gap: 6px;
           padding: 12px 15px 0;
           background-color: var(--input-container-bg, #1a1a1a);
+          opacity: 0;
+          transition: opacity 0.2s ease;
         }
 
         .model-progress.visible {
-          display: flex;
+          opacity: 1;
         }
 
         .model-progress-header {
@@ -311,12 +313,20 @@ export class ChatInterface extends HTMLElement {
    * @param {string} label
    */
   showModelProgress(label = "Loading model...") {
+    console.log("[DEBUG] ChatInterface.showModelProgress called with label:", label);
     const container = this.shadowRoot.querySelector("#chat-model-progress");
     const labelEl = this.shadowRoot.querySelector("#chat-model-progress-label");
     const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
 
     if (container) {
+      console.log("[DEBUG] Setting chat progress container to visible");
       container.classList.add("visible");
+      container.style.opacity = "1";
+
+      console.log("[DEBUG] Container styles after setting:", {
+        opacity: container.style.opacity,
+        classList: container.classList.toString()
+      });
     }
     if (labelEl) {
       labelEl.textContent = label;
@@ -340,6 +350,7 @@ export class ChatInterface extends HTMLElement {
 
     if (container && !container.classList.contains("visible")) {
       container.classList.add("visible");
+      container.style.opacity = "1";
     }
 
     if (typeof label === "string" && labelEl) {
@@ -365,6 +376,7 @@ export class ChatInterface extends HTMLElement {
     const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
     if (container) {
       container.classList.remove("visible");
+      container.style.opacity = "0";
     }
     if (labelEl && typeof statusMessage === "string") {
       labelEl.textContent = statusMessage;

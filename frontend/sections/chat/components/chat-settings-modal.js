@@ -54,7 +54,7 @@ class ChatSettingsModal extends HTMLElement {
         }
 
         .model-progress {
-          display: none;
+          display: flex;
           flex-direction: column;
           gap: 8px;
           padding: 12px;
@@ -62,10 +62,12 @@ class ChatSettingsModal extends HTMLElement {
           border: 1px solid var(--border-color, #2a2a2a);
           border-radius: 4px;
           margin-top: 8px;
+          opacity: 0;
+          transition: opacity 0.2s ease;
         }
 
         .model-progress:not([hidden]) {
-          display: flex;
+          opacity: 1;
         }
 
         .progress-header {
@@ -637,6 +639,7 @@ class ChatSettingsModal extends HTMLElement {
 
     if (container) {
       container.hidden = false;
+      container.style.opacity = "1";
     }
     if (labelEl) {
       labelEl.textContent = label;
@@ -659,6 +662,7 @@ class ChatSettingsModal extends HTMLElement {
     const container = this.shadowRoot?.querySelector("#model-progress");
     if (container && container.hidden) {
       container.hidden = false;
+      container.style.opacity = "1";
     }
 
     if (typeof label === "string") {
@@ -683,7 +687,7 @@ class ChatSettingsModal extends HTMLElement {
   hideProgress(statusLabel) {
     const container = this.shadowRoot?.querySelector("#model-progress");
     if (container) {
-      container.hidden = true;
+      container.style.opacity = "0";
     }
 
     // Reset progress to 0 when hiding
