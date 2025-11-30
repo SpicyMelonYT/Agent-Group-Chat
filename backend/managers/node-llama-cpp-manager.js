@@ -437,8 +437,7 @@ export class NodeLlamaCppManager extends Manager {
           eventChannel: "NodeLlamaCppManager:modelLoadProgress",
         },
         // TODO: Define IPC API methods for:
-        // - Text generation
-        // - Chat completion
+        // - Streaming chat completion
         // - Streaming responses
       },
     };
@@ -459,7 +458,5 @@ export class NodeLlamaCppManager extends Manager {
   }
 
   // TODO: Add methods for:
-  // - Text generation (single messages)
-  // - Streaming text generation
-  // - Chat completion with conversation history
+  // - Streaming chat completion with conversation history
 }
