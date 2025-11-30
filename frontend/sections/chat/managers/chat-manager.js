@@ -4,6 +4,7 @@ export class ChatManager extends Manager {
   async initElementReferences() {
     // Get component references by ID
     this.chatInterface = document.getElementById("chat-interface");
+    this.chatHeader = document.querySelector("chat-header");
   }
 
   async initEventListeners() {
@@ -32,11 +33,31 @@ export class ChatManager extends Manager {
     this.chatInterface.addEventListener("message-change", (e) => {
       this.handleMessageChange(e.detail.value);
     });
+
+    // Listen for back-to-main events from chat header
+    if (this.chatHeader) {
+      this.chatHeader.addEventListener("back-to-main", () => {
+        this.goBackToMain();
+      });
+    }
   }
 
   async initStates() {
     // Start with clean slate - no placeholder messages
     // this.addPlaceholderMessages();
+  }
+
+  /**
+   * Get current timestamp in readable format
+   * @returns {string} Formatted timestamp like "12:34 PM"
+   */
+  getCurrentTimestamp() {
+    const now = new Date();
+    return now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
   /**
@@ -56,8 +77,11 @@ export class ChatManager extends Manager {
       return;
     }
 
+    // Get current timestamp for the user message
+    const timestamp = this.getCurrentTimestamp();
+
     try {
-      this.chatInterface.addMessage("user", message);
+      this.chatInterface.addMessage("user", message, timestamp);
     } catch (error) {
       window.logger.error(
         {
@@ -82,9 +106,11 @@ export class ChatManager extends Manager {
     // For now, just add a placeholder response after successful message addition
     setTimeout(() => {
       if (this.chatInterface) {
+        const responseTimestamp = this.getCurrentTimestamp();
         this.chatInterface.addMessage(
           "assistant",
-          "This is a placeholder response. NodeLlamaCppManager integration coming soon."
+          "This is a placeholder response. NodeLlamaCppManager integration coming soon.",
+          responseTimestamp
         );
       }
     }, 500);
@@ -192,6 +218,18 @@ export class ChatManager extends Manager {
           addSegments();
         }
       }, 50);
+    }
+  }
+
+  /**
+   * Navigate back to the main section
+   */
+  async goBackToMain() {
+    const success = await this.section.sectionManager.navigateTo("main");
+    if (success) {
+      console.log("Successfully navigated to main");
+    } else {
+      console.error("Failed to navigate to main");
     }
   }
 }
