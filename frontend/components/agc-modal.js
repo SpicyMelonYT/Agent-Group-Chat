@@ -74,9 +74,6 @@ export class AGCModal extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    console.log(
-      `AGCModal: attributeChanged - ${name}: ${oldValue} -> ${newValue}`
-    );
     if (oldValue !== newValue) {
       if (name === "open") {
         // Handle visibility change
@@ -193,9 +190,10 @@ export class AGCModal extends HTMLElement {
 
         .panel {
           position: relative;
-          background: #ffffff;
+          background: var(--bg-secondary, #1e1e1e);
+          border: 1px solid var(--border-color, #2a2a2a);
           border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
           /* Dynamic sizing via CSS variables */
           --modal-width: 400px;
           --modal-height: auto;
@@ -207,23 +205,23 @@ export class AGCModal extends HTMLElement {
           z-index: 1;
         }
 
-        /* Hide scrollbar but keep functionality */
+        /* Custom scrollbar styling for dark theme */
         .panel::-webkit-scrollbar {
           width: 6px;
         }
 
         .panel::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.1);
+          background: rgba(255, 255, 255, 0.05);
           border-radius: 3px;
         }
 
         .panel::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.3);
+          background: rgba(255, 255, 255, 0.2);
           border-radius: 3px;
         }
 
         .panel::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(255, 255, 255, 0.3);
         }
       </style>
 
