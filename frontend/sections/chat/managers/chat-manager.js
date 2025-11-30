@@ -1,6 +1,22 @@
 import { Manager } from "../../../core/index.js";
 
 export class ChatManager extends Manager {
+  constructor() {
+    super();
+    this.configFile = "chat-config.json";
+    this.config = null;
+    this.eventListenersSetup = false;
+    this.dialogOpening = false;
+    this.modelLoading = false;
+    this.modelUnloading = false;
+    this.modelState = {
+      isModelLoaded: false,
+      modelPath: null,
+      status: "uninitialized",
+    };
+    this.modelProgressUnsub = null;
+  }
+
   async initElementReferences() {
     // Get component references by ID
     this.chatInterface = document.getElementById("chat-interface");
@@ -12,6 +28,12 @@ export class ChatManager extends Manager {
   }
 
   async initEventListeners() {
+    // Prevent duplicate event listener setup
+    if (this.eventListenersSetup) {
+      return;
+    }
+    this.eventListenersSetup = true;
+
     if (!this.chatInterface) {
       window.logger.error(
         {
@@ -24,11 +46,21 @@ export class ChatManager extends Manager {
     }
 
     // Listen for send-message events
-    this.chatInterface.addEventListener("send-message", (e) => {
+    this.chatInterface.addEventListener("send-message", async (e) => {
       const message = e.detail.inputValue.trim();
       if (message) {
+        const ready = await this.ensureModelLoaded();
+        if (!ready) {
+          window.logger.warn(
+            {
+              tags: "chat|manager|load|required",
+              color1: "yellow",
+            },
+            "Cannot send message until a model is loaded. Please load a model in settings."
+          );
+          return;
+        }
         this.handleMessageSend(message);
-        // Clear the input after sending
         this.chatInterface.clearInput();
       }
     });
@@ -49,6 +81,39 @@ export class ChatManager extends Manager {
         this.openSettingsModal();
       });
     }
+
+    // Listen for settings modal events
+    if (this.chatSettingsModal) {
+      // Browse model file request
+      this.chatSettingsModal.addEventListener("browse-model-request", () => {
+        this.handleBrowseModelRequest();
+      });
+
+      // Load model request
+      this.chatSettingsModal.addEventListener("load-model-request", (e) => {
+        this.handleLoadModelRequest(
+          e.detail.modelPath,
+          e.detail.contextAllocationSize,
+          e.detail.minContextSize,
+          e.detail.maxContextSize
+        );
+      });
+
+      // Unload model request
+      this.chatSettingsModal.addEventListener("unload-model-request", () => {
+        this.handleUnloadModelRequest();
+      });
+
+      // Clear history request
+      this.chatSettingsModal.addEventListener("clear-history-request", () => {
+        this.handleClearHistoryRequest();
+      });
+
+      // Export chat request
+      this.chatSettingsModal.addEventListener("export-chat-request", () => {
+        this.handleExportChatRequest();
+      });
+    }
   }
 
   async initStates() {
@@ -59,6 +124,17 @@ export class ChatManager extends Manager {
     if (this.loadingOverlay) {
       this.loadingOverlay.hide();
     }
+
+    // Initialize chat config
+    await this.initializeChatConfig();
+
+    if (this.chatSettingsModal && this.config) {
+      this.chatSettingsModal.setConfigData(this.config);
+    }
+
+    // Sync model state from backend and start listening for progress events
+    await this.syncModelStateFromBackend();
+    this.setupModelProgressListener();
 
     // Start with clean slate - no placeholder messages
     // this.addPlaceholderMessages();
@@ -122,7 +198,7 @@ export class ChatManager extends Manager {
     // TODO: Integrate with NodeLlamaCppManager to generate response
     // For now, just add a placeholder response after successful message addition
     setTimeout(() => {
-      if (this.chatInterface) {
+    if (this.chatInterface) {
         const responseTimestamp = this.getCurrentTimestamp();
         this.chatInterface.addMessage(
           "assistant",
@@ -130,7 +206,7 @@ export class ChatManager extends Manager {
           responseTimestamp
         );
       }
-    }, 500);
+      }, 500);
   }
 
   /**
@@ -165,7 +241,7 @@ export class ChatManager extends Manager {
     // Example AI response with multiple segments - all in ONE message bubble
     // This demonstrates the timeline of generation: thinking → commentary → function-call → thinking → response
     const assistantBubble = this.chatInterface.createAssistantMessage();
-
+    
     // Wait for component to be connected and initialized
     const addSegments = () => {
       // Add segments one by one with delays to simulate streaming
@@ -258,8 +334,27 @@ export class ChatManager extends Manager {
   /**
    * Open the settings modal
    */
-  openSettingsModal() {
+  async openSettingsModal() {
     if (this.chatSettingsModal) {
+      // Sync latest state from backend before opening
+      await this.syncModelStateFromBackend();
+      
+      // Apply the synced state to the modal
+      const statusLabel = this.formatStatusLabel(
+        this.modelState.status,
+        this.modelState.isModelLoaded
+      );
+      this.chatSettingsModal.applyModelState({
+        modelPath: this.modelState.modelPath || this.config?.modelPath,
+        statusLabel,
+      });
+      
+      // Populate config data including context settings
+      if (this.config) {
+        this.chatSettingsModal.setConfigData(this.config);
+      }
+      
+      // Open the modal (this will also hide progress bar)
       this.chatSettingsModal.open();
     } else {
       window.logger.error(
@@ -273,12 +368,598 @@ export class ChatManager extends Manager {
   }
 
   /**
+   * Initialize chat configuration
+   */
+  async initializeChatConfig() {
+    try {
+      // Try to load existing config
+      this.config = await window.storeAPI.readJSON(this.configFile);
+    } catch (error) {
+      // Create default config if it doesn't exist
+      this.config = {
+        modelPath: "",
+        vramInfo: "Unknown",
+        gpuInfo: "Unknown",
+        contextAllocationSize: 32000,
+        minContextSize: 16000,
+        maxContextSize: 48000,
+      };
+
+      // Save default config
+      await this.saveChatConfig();
+    }
+  }
+
+  /**
+   * Save chat configuration
+   */
+  async saveChatConfig() {
+    try {
+      await window.storeAPI.writeJSON(this.configFile, this.config);
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|config|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Failed to save chat config:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Update chat config and save
+   * @param {Object} updates - Config updates to apply
+   */
+  async updateChatConfig(updates) {
+    this.config = { ...this.config, ...updates };
+    await this.saveChatConfig();
+  }
+
+  /**
+   * Handle browse model file request
+   */
+  async handleBrowseModelRequest() {
+    // Prevent multiple dialogs from opening simultaneously
+    if (this.dialogOpening) {
+      return;
+    }
+    this.dialogOpening = true;
+
+    try {
+      window.logger.log(
+        {
+          tags: "chat|settings|browse",
+          color1: "blue",
+        },
+        "Opening file dialog for GGUF model selection"
+      );
+
+      // Show file open dialog filtered to GGUF files
+      const filePaths = await window.storeAPI.showOpenDialog({
+        filters: [{ name: 'GGUF Files', extensions: ['gguf'] }],
+        defaultPath: this.config?.modelPath || undefined,
+        multiSelections: false
+      });
+
+      if (filePaths && filePaths.length > 0) {
+        const selectedPath = filePaths[0];
+
+        // Update the modal with the selected path
+        if (this.chatSettingsModal) {
+          this.chatSettingsModal.setModelPath(selectedPath);
+          // Save to config
+          await this.updateChatConfig({ modelPath: selectedPath });
+        }
+        this.modelState.modelPath = selectedPath;
+
+        window.logger.log(
+          {
+            tags: "chat|settings|browse|success",
+            color1: "green",
+          },
+          "Model file selected:", selectedPath
+        );
+      } else {
+        window.logger.log(
+          {
+            tags: "chat|settings|browse|cancelled",
+            color1: "yellow",
+          },
+          "File selection cancelled by user"
+        );
+      }
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|settings|browse|error",
+          color1: "red",
+        },
+        "Failed to browse model file:",
+        error
+      );
+    } finally {
+      // Reset the flag after dialog operation completes
+      this.dialogOpening = false;
+    }
+  }
+
+  /**
+   * Handle load model request
+   * @param {string} modelPath - Path to the model file
+   * @param {number} contextAllocationSize - Context allocation size for VRAM
+   * @param {number} minContextSize - Minimum context size
+   * @param {number} maxContextSize - Maximum context size
+   */
+  async handleLoadModelRequest(
+    modelPath,
+    contextAllocationSize = null,
+    minContextSize = null,
+    maxContextSize = null
+  ) {
+    if (this.modelLoading) {
+      return false;
+    }
+    this.modelLoading = true;
+
+    // Use provided values or fall back to config defaults
+    const resolvedPath = (modelPath || this.config?.modelPath || "").trim();
+    const allocationSize = contextAllocationSize ?? this.config?.contextAllocationSize ?? 32000;
+    const minSize = minContextSize ?? this.config?.minContextSize ?? 16000;
+    const maxSize = maxContextSize ?? this.config?.maxContextSize ?? 48000;
+
+    if (!resolvedPath) {
+      window.logger.warn(
+        {
+          tags: "chat|settings|load|warning",
+          color1: "yellow",
+        },
+        "No model path available. Please choose a GGUF file first."
+      );
+      this.modelLoading = false;
+      this.openSettingsModal();
+      return false;
+    }
+
+    if (!window.nodellamacppAPI?.loadModel) {
+      window.logger.error(
+        {
+          tags: "chat|settings|load|error",
+          color1: "red",
+        },
+        "nodellamacppAPI.loadModel is not available in the preload bridge."
+      );
+      this.modelLoading = false;
+      return false;
+    }
+
+    window.logger.log(
+      {
+        tags: "chat|settings|load",
+        color1: "blue",
+      },
+      "Loading model:",
+      resolvedPath,
+      `(allocation: ${allocationSize}, context: ${minSize}-${maxSize})`
+    );
+
+    this.showModelProgressIndicators("Loading model...");
+
+    try {
+      // Prepare model config with context allocation size
+      const modelConfig = {};
+      if (allocationSize != null && allocationSize > 0) {
+        modelConfig.gpuLayers = {
+          fitContext: { contextSize: allocationSize },
+        };
+        modelConfig.defaultContextFlashAttention = true;
+      }
+
+      // Prepare context config with max context size
+      const contextConfig = {
+        contextSize: maxSize > 0 ? maxSize : "auto",
+      };
+
+      await window.nodellamacppAPI.loadModel(
+        resolvedPath,
+        modelConfig,
+        contextConfig,
+        {} // sessionConfig
+      );
+
+      // Save config with all settings
+      const configUpdate = {
+        modelPath: resolvedPath,
+        contextAllocationSize: allocationSize,
+        minContextSize: minSize,
+        maxContextSize: maxSize,
+      };
+      await this.updateChatConfig(configUpdate);
+
+      await this.syncModelStateFromBackend();
+
+      window.logger.log(
+        {
+          tags: "chat|settings|load|success",
+          color1: "green",
+        },
+        "Model loaded successfully"
+      );
+      return true;
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|settings|load|error",
+          color1: "red",
+        },
+        "Failed to load model:",
+        error
+      );
+
+      this.hideModelProgressIndicators("Load failed");
+      return false;
+    } finally {
+      this.modelLoading = false;
+    }
+  }
+
+  /**
+   * Handle unload model request
+   */
+  async handleUnloadModelRequest() {
+    // Prevent multiple unload operations
+    if (this.modelUnloading) {
+      return;
+    }
+    this.modelUnloading = true;
+
+    if (!window.nodellamacppAPI?.unloadModel) {
+      window.logger.error(
+        {
+          tags: "chat|settings|unload|error",
+          color1: "red",
+        },
+        "nodellamacppAPI.unloadModel is not available in the preload bridge."
+      );
+      return;
+    }
+
+    this.showModelProgressIndicators("Unloading model...");
+
+    try {
+      window.logger.log(
+        {
+          tags: "chat|settings|unload",
+          color1: "blue",
+        },
+        "Unloading model"
+      );
+
+      // Call backend to unload model
+      const unloadResult = await window.nodellamacppAPI.unloadModel();
+
+      if (unloadResult.success) {
+        await this.syncModelStateFromBackend();
+        this.hideModelProgressIndicators("Model unloaded");
+
+        window.logger.log(
+          {
+            tags: "chat|settings|unload|success",
+            color1: "green",
+          },
+          "Model unloaded successfully"
+        );
+      } else {
+        // Handle unload errors
+        const errorMsg = unloadResult.errors.join(", ");
+        window.logger.error(
+          {
+            tags: "chat|settings|unload|error",
+            color1: "red",
+          },
+          "Model unload failed:",
+          errorMsg
+        );
+
+        this.hideModelProgressIndicators("Unload failed");
+      }
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|settings|unload|error",
+          color1: "red",
+        },
+        "Failed to unload model:",
+        error
+      );
+      this.hideModelProgressIndicators("Unload failed");
+    } finally {
+      // Reset the unloading flag
+      this.modelUnloading = false;
+    }
+  }
+
+  /**
+   * Handle clear history request
+   */
+  async handleClearHistoryRequest() {
+    try {
+      window.logger.log(
+        {
+          tags: "chat|settings|clear",
+          color1: "blue",
+        },
+        "Clearing chat history"
+      );
+
+      // Clear messages from interface
+      if (this.chatInterface) {
+        this.chatInterface.clearMessages();
+      }
+
+      window.logger.log(
+        {
+          tags: "chat|settings|clear|success",
+          color1: "green",
+        },
+        "Chat history cleared"
+      );
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|settings|clear|error",
+          color1: "red",
+        },
+        "Failed to clear chat history:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Handle export chat request
+   */
+  async handleExportChatRequest() {
+    try {
+      window.logger.log(
+        {
+          tags: "chat|settings|export",
+          color1: "blue",
+        },
+        "Exporting chat data"
+      );
+
+      // For now, just log - in real implementation would export to file
+      window.logger.warn(
+        {
+          tags: "chat|settings|export|todo",
+          color1: "yellow",
+        },
+        "Chat export not yet implemented"
+      );
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|settings|export|error",
+          color1: "red",
+        },
+        "Failed to export chat:",
+        error
+      );
+    }
+  }
+
+  /**
    * Clean up the loading overlay
    */
   cleanupLoadingOverlay() {
     if (this.loadingOverlay && this.loadingOverlay.parentNode) {
       this.loadingOverlay.parentNode.removeChild(this.loadingOverlay);
       this.loadingOverlay = null;
+    }
+  }
+
+  /**
+   * Ensure a model is loaded before sending chat requests
+   * @returns {Promise<boolean>} True if a model is ready
+   */
+  async ensureModelLoaded() {
+    if (this.modelState?.isModelLoaded) {
+      return true;
+    }
+
+    const path = this.config?.modelPath;
+    if (!path) {
+      window.logger.warn(
+        {
+          tags: "chat|manager|load|required",
+          color1: "yellow",
+        },
+        "No model path configured. Please choose a model in settings."
+      );
+      this.openSettingsModal();
+      return false;
+    }
+
+    return await this.handleLoadModelRequest(path);
+  }
+
+  /**
+   * Fetch model state from backend and update UI
+   */
+  async syncModelStateFromBackend() {
+    if (!window.nodellamacppAPI?.getModelState) {
+      return;
+    }
+
+    try {
+      const state = await window.nodellamacppAPI.getModelState();
+      if (state) {
+        this.applyModelState({
+          isModelLoaded: !!state.isModelLoaded,
+          modelPath: state.modelPath,
+          status: state.status || (state.isModelLoaded ? "loaded" : "unloaded"),
+        });
+      }
+    } catch (error) {
+      window.logger.error(
+        {
+          tags: "chat|manager|state|error",
+          color1: "red",
+        },
+        "Failed to fetch model state from backend:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Apply backend model state to UI + internal cache
+   * @param {Object} state
+   */
+  applyModelState(state = {}) {
+    const modelPath =
+      state.modelPath ??
+      this.modelState.modelPath ??
+      this.config?.modelPath ??
+      "";
+
+    this.modelState = {
+      isModelLoaded:
+        typeof state.isModelLoaded === "boolean"
+          ? state.isModelLoaded
+          : this.modelState.isModelLoaded,
+      modelPath,
+      status: state.status || this.modelState.status,
+    };
+
+    const statusLabel = this.formatStatusLabel(
+      this.modelState.status,
+      this.modelState.isModelLoaded
+    );
+
+    if (this.chatSettingsModal) {
+      if (modelPath) {
+        this.chatSettingsModal.setModelPath(modelPath);
+      }
+      this.chatSettingsModal.applyModelState({
+        modelPath,
+        statusLabel,
+      });
+    }
+  }
+
+  /**
+   * Human readable status label
+   */
+  formatStatusLabel(status, isLoaded) {
+    const normalized = (status || "").toLowerCase();
+    if (normalized === "loading") return "Loading model...";
+    if (normalized === "completed" || normalized === "loaded")
+      return "Model loaded";
+    if (normalized === "unloaded") return "Model unloaded";
+    if (normalized === "error" || normalized === "failed")
+      return "Model load failed";
+    if (isLoaded) return "Model loaded";
+    return "No model loaded";
+  }
+
+  /**
+   * Subscribe to backend load progress events
+   */
+  setupModelProgressListener() {
+    if (!window.nodellamacppAPI?.onModelLoadProgress) {
+      return;
+    }
+
+    if (typeof this.modelProgressUnsub === "function") {
+      this.modelProgressUnsub();
+      this.modelProgressUnsub = null;
+    }
+
+    this.modelProgressUnsub = window.nodellamacppAPI.onModelLoadProgress(
+      (event) => this.handleModelProgressEvent(event)
+    );
+  }
+
+  /**
+   * Handle backend load/unload progress events
+   * @param {Object} event
+   */
+  handleModelProgressEvent(event = {}) {
+    const { status, percentage = 0, modelPath, error } = event;
+    const normalized = (status || "").toLowerCase();
+
+    if (normalized === "loading") {
+      // Only show progress if we're actually in a loading state
+      // (don't show on stale 0% events when modal first opens)
+      if (this.modelLoading || percentage > 0) {
+        this.showModelProgressIndicators("Loading model...");
+        this.updateModelProgressIndicators(percentage);
+      }
+      return;
+    }
+
+    if (normalized === "completed") {
+      this.updateModelProgressIndicators(100);
+      this.hideModelProgressIndicators("Model loaded");
+      this.applyModelState({
+        isModelLoaded: true,
+        modelPath: modelPath || this.modelState.modelPath,
+        status: "loaded",
+      });
+      return;
+    }
+
+    if (normalized === "unloaded") {
+      this.updateModelProgressIndicators(0);
+      this.hideModelProgressIndicators("Model unloaded");
+      this.applyModelState({
+        isModelLoaded: false,
+        modelPath: null,
+        status: "unloaded",
+      });
+      return;
+    }
+
+    if (normalized === "error") {
+      const label = error
+        ? `Load failed: ${error}`
+        : "Model load failed";
+      this.hideModelProgressIndicators(label);
+      this.applyModelState({
+        isModelLoaded: false,
+        status: "error",
+      });
+    }
+  }
+
+  showModelProgressIndicators(label = "Loading model...") {
+    if (this.chatSettingsModal) {
+      this.chatSettingsModal.showProgress(label);
+    }
+    if (this.chatInterface) {
+      this.chatInterface.showModelProgress(label);
+    }
+  }
+
+  updateModelProgressIndicators(percentage, label) {
+    if (this.chatSettingsModal) {
+      this.chatSettingsModal.updateProgress(percentage, label);
+    }
+    if (this.chatInterface) {
+      this.chatInterface.updateModelProgress(percentage, label);
+    }
+  }
+
+  hideModelProgressIndicators(label) {
+    if (this.chatSettingsModal) {
+      this.chatSettingsModal.hideProgress(label);
+    }
+    if (this.chatInterface) {
+      this.chatInterface.hideModelProgress(label);
     }
   }
 }

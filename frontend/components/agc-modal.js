@@ -243,11 +243,24 @@ export class AGCModal extends HTMLElement {
 
   setupEventListeners() {
     const backdrop = this.shadowRoot.querySelector(".backdrop");
+    const panel = this.shadowRoot.querySelector(".panel");
 
-    // Close modal when clicking on backdrop
-    backdrop.addEventListener("click", () => {
-      this.close();
-    });
+    // Stop propagation on panel clicks to prevent them from reaching the backdrop
+    if (panel) {
+      panel.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    // Close modal when clicking directly on backdrop (not on bubbled events)
+    if (backdrop) {
+      backdrop.addEventListener("click", (e) => {
+        // Only close if the click target is the backdrop itself (not a bubbled event)
+        if (e.target === backdrop) {
+          this.close();
+        }
+      });
+    }
   }
 
   /**

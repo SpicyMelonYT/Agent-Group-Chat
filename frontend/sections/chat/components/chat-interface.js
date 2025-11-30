@@ -67,6 +67,39 @@ export class ChatInterface extends HTMLElement {
           flex-direction: column;
         }
 
+        .model-progress {
+          display: none;
+          flex-direction: column;
+          gap: 6px;
+          padding: 12px 15px 0;
+          background-color: var(--input-container-bg, #1a1a1a);
+        }
+
+        .model-progress.visible {
+          display: flex;
+        }
+
+        .model-progress-header {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13px;
+          color: var(--text-secondary, #cccccc);
+        }
+
+        .model-progress-bar {
+          width: 100%;
+          height: 6px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          overflow: hidden;
+        }
+
+        .model-progress-fill {
+          width: 0%;
+          height: 100%;
+          background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+        }
+
         .input-container {
           display: flex;
           gap: 15px;
@@ -104,6 +137,15 @@ export class ChatInterface extends HTMLElement {
       </style>
       <div class="chat-container">
         <div class="messages-container" id="messages-container">
+        </div>
+        <div class="model-progress" id="chat-model-progress">
+          <div class="model-progress-header">
+            <span id="chat-model-progress-label">Loading model...</span>
+            <span id="chat-model-progress-percent">0%</span>
+          </div>
+          <div class="model-progress-bar">
+            <div class="model-progress-fill" id="chat-model-progress-fill"></div>
+          </div>
         </div>
         <div class="input-container">
           <div class="input-wrapper">
@@ -261,6 +303,78 @@ export class ChatInterface extends HTMLElement {
     const textarea = this.shadowRoot.querySelector("#chat-input");
     if (textarea) {
       textarea.setValue("");
+    }
+  }
+
+  /**
+   * Show the model loading progress bar
+   * @param {string} label
+   */
+  showModelProgress(label = "Loading model...") {
+    const container = this.shadowRoot.querySelector("#chat-model-progress");
+    const labelEl = this.shadowRoot.querySelector("#chat-model-progress-label");
+    const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
+
+    if (container) {
+      container.classList.add("visible");
+    }
+    if (labelEl) {
+      labelEl.textContent = label;
+    }
+    if (percentEl) {
+      percentEl.textContent = "0%";
+    }
+    this.updateModelProgress(0);
+  }
+
+  /**
+   * Update progress percentage and optional label
+   * @param {number} percentage
+   * @param {string} label
+   */
+  updateModelProgress(percentage, label) {
+    const container = this.shadowRoot.querySelector("#chat-model-progress");
+    const fill = this.shadowRoot.querySelector("#chat-model-progress-fill");
+    const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
+    const labelEl = this.shadowRoot.querySelector("#chat-model-progress-label");
+
+    if (container && !container.classList.contains("visible")) {
+      container.classList.add("visible");
+    }
+
+    if (typeof label === "string" && labelEl) {
+      labelEl.textContent = label;
+    }
+
+    const clamped = Math.max(0, Math.min(100, Math.round(percentage || 0)));
+    if (fill) {
+      fill.style.width = `${clamped}%`;
+    }
+    if (percentEl) {
+      percentEl.textContent = `${clamped}%`;
+    }
+  }
+
+  /**
+   * Hide the model progress bar
+   * @param {string} statusMessage
+   */
+  hideModelProgress(statusMessage) {
+    const container = this.shadowRoot.querySelector("#chat-model-progress");
+    const labelEl = this.shadowRoot.querySelector("#chat-model-progress-label");
+    const percentEl = this.shadowRoot.querySelector("#chat-model-progress-percent");
+    if (container) {
+      container.classList.remove("visible");
+    }
+    if (labelEl && typeof statusMessage === "string") {
+      labelEl.textContent = statusMessage;
+    }
+    if (percentEl) {
+      percentEl.textContent = "";
+    }
+    const fill = this.shadowRoot.querySelector("#chat-model-progress-fill");
+    if (fill) {
+      fill.style.width = "0%";
     }
   }
 }

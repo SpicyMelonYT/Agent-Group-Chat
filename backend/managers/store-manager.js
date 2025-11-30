@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
-import { app } from "electron";
+import { app, dialog } from "electron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -323,6 +323,9 @@ export class StoreManager extends Manager {
         listArchives: { channel: "StoreManager:listArchives" },
         archiveExists: { channel: "StoreManager:archiveExists" },
 
+        // Dialog system
+        showOpenDialog: { channel: "StoreManager:showOpenDialog" },
+
         // Entry system
         createEntry: { channel: "StoreManager:createEntry" },
         deleteEntry: { channel: "StoreManager:deleteEntry" },
@@ -627,6 +630,47 @@ export class StoreManager extends Manager {
       throw new Error(
         `Failed to delete data from entry ${entryId}: ${error.message}`
       );
+    }
+  }
+
+  /**
+   * Show file open dialog for selecting files
+   * @param {Object} options - Dialog options
+   * @param {string[]} options.filters - File filters (e.g., [{name: 'GGUF Files', extensions: ['gguf']}])
+   * @param {string} options.defaultPath - Default directory path
+   * @param {boolean} options.multiSelections - Allow multiple file selection
+   * @returns {string[]|null} Selected file paths or null if cancelled
+   */
+  async showOpenDialog(options = {}) {
+    try {
+      const {
+        filters = [{ name: 'GGUF Files', extensions: ['gguf'] }],
+        defaultPath = app.getPath('documents'),
+        multiSelections = false
+      } = options;
+
+      const result = await dialog.showOpenDialog(this.app.mainWindow, {
+        properties: multiSelections ? ['openFile', 'multiSelections'] : ['openFile'],
+        filters,
+        defaultPath
+      });
+
+      if (result.canceled) {
+        return null;
+      }
+
+      return result.filePaths;
+    } catch (error) {
+      global.logger.error(
+        {
+          tags: "store|dialog|error",
+          color1: "red",
+          color2: "orange",
+        },
+        "Failed to show open dialog:",
+        error
+      );
+      throw error;
     }
   }
 }

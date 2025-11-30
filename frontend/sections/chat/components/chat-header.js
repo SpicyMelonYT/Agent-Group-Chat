@@ -29,6 +29,7 @@ export class ChatHeader extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this.listenersSetup = false;
   }
 
   static get observedAttributes() {
@@ -107,6 +108,12 @@ export class ChatHeader extends HTMLElement {
   }
 
   setupEventListeners() {
+    // Prevent duplicate event listener setup
+    if (this.listenersSetup) {
+      return;
+    }
+    this.listenersSetup = true;
+
     const backButton = this.shadowRoot.querySelector('.back-button agc-button');
     if (backButton) {
       backButton.addEventListener('click', () => {
