@@ -687,6 +687,7 @@ class ChatSettingsModal extends HTMLElement {
   hideProgress(statusLabel) {
     const container = this.shadowRoot?.querySelector("#model-progress");
     if (container) {
+      container.hidden = true;
       container.style.opacity = "0";
     }
 
